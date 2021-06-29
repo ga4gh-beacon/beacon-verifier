@@ -1,0 +1,22 @@
+name: jsc-val
+about: Utility to validate json schema files agains examples.
+args:
+    - verbose:
+        required: false
+        short: v
+        long: verbose
+        about: Sets the level of verbosity
+        takes_value: false
+    - path:
+        required: true
+        long: path
+        short: p
+        about: Path where the json schemas are stored.
+        takes_value: true
+    - inner_folder:
+        required: false
+        long: inner_folder
+        short: f
+        about: Name of the folder to inspect
+        default_value: "*"
+        takes_value: true
