@@ -55,10 +55,8 @@ beacon-verifier --output /path/to/output https://beacon-url.com/
                 "url": "https://.../variants",
                 "valid": null
             }
-            //...
         }
-    },
-    //...
+    }
 ]
 ```
 
