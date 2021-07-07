@@ -50,9 +50,9 @@ beacon-verifier --output /path/to/output https://beacon-url.com/
                 "url": "https://.../variants",
                 "valid": false
             },
-            "variants": {
-                "name": "Variants",
-                "url": "https://.../variants",
+            "biosamples": {
+                "name": "Biosamples",
+                "url": "https://.../biosamples",
                 "valid": null
             }
         }
