@@ -26,10 +26,10 @@ beacon-verifier --spec https://beacon-spec.com/ https://beacon-url.com/
 
 ## Output
 
-The output is a json file that is saved in the current directory. You can override the location of the output with the `--output` option.
+The output is a JSON file written to stdout. You can redirect it to save it into a file.
 
 ```sh
-beacon-verifier --output /path/to/output https://beacon-url.com/
+beacon-verifier https://beacon-url.com/ > /path/to/output
 ```
 
 ### Output example
