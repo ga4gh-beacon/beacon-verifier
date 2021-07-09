@@ -1,53 +1,19 @@
+#![allow(clippy::module_name_repetitions, clippy::unused_self)]
+
 use std::error::Error;
-use std::ffi::OsStr;
-use std::path::Path;
 
-use clap::crate_authors;
-use clap::crate_version;
-use clap::load_yaml;
-use clap::App;
-use clap::AppSettings;
-use serde_json::Value;
+use clap::{crate_authors, crate_version, load_yaml, App, AppSettings};
+use url::Url;
 
-use crate::model::Model;
+use crate::beacon::Beacon;
+use crate::spec::Spec;
 
-mod config;
-mod model;
+mod beacon;
+mod interface;
+mod spec;
 mod utils;
 
-fn should_replace_key_value(k: &str, v: &mut Value, base_url: &str) {
-	if k.starts_with('$') {
-		if let Value::String(path) = v {
-			if Path::new(path).extension().is_some() && Path::new(path).extension().unwrap() == "json" {
-				if let Err(e) = url::Url::parse(&path.clone()) {
-					if e == url::ParseError::RelativeUrlWithoutBase {
-						*path = utils::normalize_path(Path::new(&format!("{}/{}", base_url, &path)))
-							.to_string_lossy()
-							.to_string();
-						// paris::info!("PATH: {}", path);
-					}
-				}
-			}
-		}
-	}
-}
-
-fn deep_keys(value: &mut Value, base_url: &str) {
-	match value {
-		Value::Object(map) => {
-			for (k, v) in map {
-				should_replace_key_value(k, v, base_url);
-				deep_keys(v, base_url);
-			}
-		}
-		Value::Array(array) => {
-			for v in array.iter_mut() {
-				deep_keys(v, base_url);
-			}
-		}
-		_ => (),
-	}
-}
+pub type Json = serde_json::Value;
 
 fn run() -> Result<(), Box<dyn Error>> {
 	// Get args
@@ -60,28 +26,52 @@ fn run() -> Result<(), Box<dyn Error>> {
 		.global_setting(AppSettings::ColoredHelp)
 		.get_matches();
 
-	// Coger el directorio base
-	let dir = Path::new(matches.value_of("path").unwrap()).canonicalize().unwrap();
-	paris::info!("PATH: {}", dir.display());
-
-	// Create model
-	let mut model = Model::new();
-
-	// Encontrar todos los subdirectorios
-	for entry in walkdir::WalkDir::new(dir).into_iter().flatten() {
-		if entry.path().extension() == Some(OsStr::new("json")) {
-			model.add(entry.path())?;
-		}
+	// Verbose
+	if matches.is_present("verbose") {
+		std::env::set_var("RUST_LOG", "debug");
 	}
+	else {
+		std::env::set_var("RUST_LOG", "info");
+	}
+	pretty_env_logger::init();
 
-	model.validate();
+	// Load spec
+	let spec_location = matches.value_of_t("spec")?;
+	log::info!("Loading spec from: {}", spec_location);
+	let spec = Spec::load(&spec_location).expect("Load spec failed");
+	let n_entitites = spec.validate()?;
+	log::info!("Valid spec (number of entities: {})", n_entitites);
+
+	// Validate beacons
+	if !matches.is_present("only-spec") {
+		// Load beacons
+		let mut output = Vec::new();
+		for beacon_url in matches.values_of_t::<Url>("URLS")? {
+			log::info!("Validating implementation on {}", beacon_url);
+			match Beacon::new(spec.clone(), beacon_url) {
+				Ok(beacon) => match beacon.validate() {
+					Ok(beacon_output) => output.push(beacon_output),
+					Err(e) => {
+						log::error!("{:?}", e);
+					},
+				},
+				Err(e) => {
+					log::error!("{:?}", e);
+				},
+			}
+		}
+
+		let payload = serde_json::to_string_pretty(&output)?;
+		println!("{}", payload);
+	}
 
 	Ok(())
 }
 
 fn main() {
 	if let Err(err) = run() {
-		paris::error!("{}", err);
+		let _ = pretty_env_logger::try_init();
+		log::error!("{}", err);
 		std::process::exit(1);
 	}
 }

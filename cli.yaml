@@ -1,5 +1,5 @@
 name: jsc-val
-about: Utility to validate json schema files agains examples.
+about: Utility to validate beacon implementations agains examples.
 args:
     - verbose:
         required: false
@@ -7,16 +7,27 @@ args:
         long: verbose
         about: Sets the level of verbosity
         takes_value: false
-    - path:
-        required: true
-        long: path
-        short: p
-        about: Path where the json schemas are stored.
-        takes_value: true
-    - inner_folder:
+    - only-spec:
         required: false
-        long: inner_folder
-        short: f
-        about: Name of the folder to inspect
-        default_value: "*"
+        long: only-spec
+        about: Only validate the spec referenced
+        takes_value: false
+    - spec:
+        required: false
+        short: s
+        long: spec
+        about: Location of the spec
         takes_value: true
+        default_value: https://github.com/ga4gh-beacon/beacon-v2-Models/tree/main/BEACON-V2-draft4-Model
+    - output:
+        required: true
+        short: o
+        long: output
+        about: Location of the output
+        takes_value: true
+        value_name: output_path
+        default_value: "./output.json"
+    - URLS:
+        required: true
+        about: Urls to the Beacon implementations
+        multiple: true

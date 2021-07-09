@@ -1,48 +1,49 @@
-use std::{
-	error::Error,
-	path::{Component, Path, PathBuf},
-};
+use std::path::{Path, PathBuf};
 
-use url::{ParseError, Url};
+pub fn copy_dir_recursively<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> Result<(), std::io::Error> {
+	let mut stack = vec![PathBuf::from(from.as_ref())];
 
-pub fn fix_path(path_str: &str, in_file: &str) -> Result<String, Box<dyn Error>> {
-	let url = Url::parse(path_str);
-	match url {
-		Ok(url) => Ok(url.to_string()),
-		Err(e) => match e {
-			ParseError::RelativeUrlWithoutBase => {
-				let in_file_path = Path::new(in_file).parent().unwrap();
-				let path = in_file_path.join(Path::new(path_str));
-				Ok(path.canonicalize()?.to_string_lossy().to_string())
-			}
-			_ => {
-				panic!("{}", e);
-			}
-		},
-	}
-}
+	let output_root = PathBuf::from(to.as_ref());
+	let input_root = PathBuf::from(from.as_ref()).components().count();
 
-pub fn normalize_path(path: &Path) -> PathBuf {
-	let mut components = path.components().peekable();
-	let mut ret = components.peek().copied().map_or_else(PathBuf::new, |c| {
-		components.next();
-		PathBuf::from(c.as_os_str())
-	});
+	while let Some(working_path) = stack.pop() {
+		log::debug!("process: {:?}", &working_path);
 
-	for component in components {
-		match component {
-			Component::Prefix(..) => unreachable!(),
-			Component::RootDir => {
-				ret.push(component.as_os_str());
+		// Generate a relative path
+		let src: PathBuf = working_path.components().skip(input_root).collect();
+
+		// Create a destination if missing
+		let dest = if src.components().count() == 0 {
+			output_root.clone()
+		}
+		else {
+			output_root.join(&src)
+		};
+		if std::fs::metadata(&dest).is_err() {
+			log::debug!(" mkdir: {:?}", dest);
+			std::fs::create_dir_all(&dest)?;
+		}
+
+		for entry in std::fs::read_dir(working_path)? {
+			let entry = entry?;
+			let path = entry.path();
+			if path.is_dir() {
+				stack.push(path);
 			}
-			Component::CurDir => {}
-			Component::ParentDir => {
-				ret.pop();
-			}
-			Component::Normal(c) => {
-				ret.push(c);
+			else {
+				match path.file_name() {
+					Some(filename) => {
+						let dest_path = dest.join(filename);
+						log::debug!("  copy: {:?} -> {:?}", &path, &dest_path);
+						std::fs::copy(&path, &dest_path)?;
+					},
+					None => {
+						log::error!("failed: {:?}", path);
+					},
+				}
 			}
 		}
 	}
-	ret
+
+	Ok(())
 }
