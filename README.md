@@ -24,6 +24,12 @@ beacon-verifier https://beacon-url.com/
 beacon-verifier --spec https://beacon-spec.com/ https://beacon-url.com/
 ```
 
+Alternatively, you can specify a local specification:
+
+```sh
+beacon-verifier --spec file://$PWD/tests/BEACON-V2-draft4-Model https://beacon-url.com/
+```
+
 ## Output
 
 The output is a JSON file written to stdout. You can redirect it to save it into a file.
