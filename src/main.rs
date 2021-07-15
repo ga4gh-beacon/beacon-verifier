@@ -37,7 +37,7 @@ fn run() -> Result<(), Box<dyn Error>> {
 
 	// Load spec
 	let spec_location = matches.value_of_t("spec")?;
-	log::info!("Loading spec from: {}", spec_location);
+	log::debug!("Loading spec from: {}", spec_location);
 	let spec = Spec::load(&spec_location).expect("Load spec failed");
 	let n_entitites = spec.validate()?;
 	log::info!("Valid spec (number of entities: {})", n_entitites);

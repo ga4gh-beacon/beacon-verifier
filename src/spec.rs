@@ -4,6 +4,7 @@ use std::ffi::OsStr;
 use std::fs::File;
 use std::path::{Path, PathBuf};
 
+use git2::Repository;
 use url::Url;
 
 use crate::interface::{Endpoint, EntryType};
@@ -33,18 +34,23 @@ impl Spec {
 			utils::copy_dir_recursively(location.path(), &dir).expect("Copy dir recursively failed");
 		}
 		else {
-			panic!("External specs are not implemented yet");
-			// match Repository::clone(location.as_str(), &dir) {
-			// 	Ok(_) => {
-			// 		let beacon_map_path = dir.path().join("beaconMap.json");
-			// 		let beacon_map = File::open(beacon_map_path)?;
-			// 		let beacon_map_json: Json = serde_json::from_reader(beacon_map)?;
-			// 		for (endpoint, _) in beacon_map_json.get("endpointSets").unwrap().as_object().unwrap() {
-			// 			log::debug!("Endpoint: {}", endpoint);
-			// 		}
-			// 	},
-			// 	Err(e) => panic!("failed to clone: {}, location: {}, temp dir: {:?}", e, location, dir.path()),
-			// };
+			// Parse spec repo URL
+			assert_eq!(location.domain().unwrap_or(""), "github.com", "Only repos hosted on github.com are supported");
+			let mut url_iter = Path::new(location.path()).components().skip(1);
+			let owner = url_iter.next().unwrap().as_os_str().to_string_lossy().to_string();
+			let repo = url_iter.next().unwrap().as_os_str().to_string_lossy().to_string();
+			let path: PathBuf = url_iter.collect();
+
+			log::debug!("Downloading repo {} from {}", repo, owner);
+			log::debug!("Path inside repo = {:?}", path);
+
+			// Clone repo to tempdir
+			let repo_url = format!("https://github.com/{owner}/{repo}", owner = owner, repo = repo);
+			let full_git_dir = tempfile::tempdir().expect("Could not create temporary directory");
+			Repository::clone(&repo_url, full_git_dir.path()).expect("Unable to clone repository");
+			
+			// Copy subfolder to the final tempdir
+			utils::copy_dir_recursively(full_git_dir.path().join(path), dir.path()).unwrap();
 		}
 
 		let mut spec = Self {
