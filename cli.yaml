@@ -18,7 +18,7 @@ args:
         long: spec
         about: Location of the spec
         takes_value: true
-        default_value: https://github.com/ga4gh-beacon/beacon-v2-Models/tree/main/BEACON-V2-draft4-Model
+        default_value: https://github.com/ga4gh-beacon/beacon-v2-Models/BEACON-V2-draft4-Model
     - output:
         required: true
         short: o
