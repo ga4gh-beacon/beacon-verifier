@@ -35,7 +35,11 @@ impl Spec {
 		}
 		else {
 			// Parse spec repo URL
-			assert_eq!(location.domain().unwrap_or(""), "github.com", "Only repos hosted on github.com are supported");
+			assert_eq!(
+				location.domain().unwrap_or(""),
+				"github.com",
+				"Only repos hosted on github.com are supported"
+			);
 			let mut url_iter = Path::new(location.path()).components().skip(1);
 			let owner = url_iter.next().unwrap().as_os_str().to_string_lossy().to_string();
 			let repo = url_iter.next().unwrap().as_os_str().to_string_lossy().to_string();
@@ -48,7 +52,7 @@ impl Spec {
 			let repo_url = format!("https://github.com/{owner}/{repo}", owner = owner, repo = repo);
 			let full_git_dir = tempfile::tempdir().expect("Could not create temporary directory");
 			Repository::clone(&repo_url, full_git_dir.path()).expect("Unable to clone repository");
-			
+
 			// Copy subfolder to the final tempdir
 			utils::copy_dir_recursively(full_git_dir.path().join(path), dir.path()).unwrap();
 		}
