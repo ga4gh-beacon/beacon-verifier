@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::path::{Path, PathBuf};
 
 use url::Url;
 
@@ -14,7 +15,9 @@ pub struct Beacon {
 
 impl Beacon {
 	pub fn new(spec: Spec, url: Url) -> Result<Self, Box<dyn Error>> {
-		let info: Json = ureq::get(url.join("info")?.as_str()).call()?.into_json()?;
+		let mut info_url = url.clone();
+		info_url.set_path(Path::new(url.path()).join("info").to_str().unwrap_or(""));
+		let info: Json = ureq::get(&info_url.to_string()).call()?.into_json()?;
 		log::trace!("{}", info);
 
 		let name_json = info
@@ -103,7 +106,11 @@ impl Beacon {
 			eprintln!();
 			log::info!("Validating {:?}", entity.name);
 			let mut replaced_url = self.url.clone();
-			replaced_url.set_path(entity.url.path());
+			let new_path: PathBuf = PathBuf::from(replaced_url.path())
+				.components()
+				.chain(Path::new(entity.url.path()).components().skip(1))
+				.collect();
+			replaced_url.set_path(new_path.to_str().unwrap_or(""));
 			log::debug!("GET {}", replaced_url);
 
 			let valid = self.valid_endpoint(entity, &replaced_url);
