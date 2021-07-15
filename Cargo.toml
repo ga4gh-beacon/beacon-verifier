@@ -3,6 +3,12 @@ name = "beacon-verifier"
 version = "0.1.0"
 authors = ["Mr.Robb <roberto.ariosa@crg.eu>"]
 edition = "2018"
+license = "Apache-2.0"
+description = "Compliance tool to verify beacon implementations."
+repository = "https://github.com/ga4gh-beacon/beacon-verifier"
+keywords = ["genetics", "http", "api", "jsonschema", "validation"]
+categories = ["development-tools.categories.testing"]
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
