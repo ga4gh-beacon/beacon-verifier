@@ -171,6 +171,22 @@ impl Beacon {
 			valid,
 		});
 
+		// Validate entry types
+		let mut entry_types_url = self.url.clone();
+		entry_types_url.set_path(Path::new(self.url.path()).join("entry_types").to_str().unwrap_or(""));
+		let valid = match utils::ping_url(&entry_types_url) {
+			Ok(entry_types_json) => self.valid_schema(&self.framework.entry_types_json, &entry_types_json),
+			Err(e) => {
+				log::error!("{}", e);
+				None
+			},
+		};
+		output.push(EndpointOutput {
+			name: "EntryTypes".into(),
+			url: entry_types_url,
+			valid,
+		});
+
 		// Validate endpoints configuration
 		// TODO: Validate OpenAPI 3.0
 

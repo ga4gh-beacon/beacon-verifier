@@ -13,6 +13,7 @@ use crate::{utils, Json};
 pub struct Framework {
 	pub configuration_json: Json,
 	pub beacon_map_json: Json,
+    pub entry_types_json: Json,
 	files: HashMap<PathBuf, Json>,
 }
 
@@ -51,6 +52,7 @@ impl Framework {
 		let mut framework = Self {
 			configuration_json: Json::Null,
 			beacon_map_json: Json::Null,
+            entry_types_json: Json::Null,
 			files: HashMap::new(),
 		};
 
@@ -78,13 +80,18 @@ impl Framework {
 	fn load_configuration(&mut self, base_path: &Path) {
 		self.beacon_map_json = self
 			.files
-			.get(&base_path.join("configuration").join("beaconMapSchema.json"))
-			.expect("beaconMapSchema.json not found")
+			.get(&base_path.join("responses").join("beaconMapResponse.json"))
+			.expect("beaconMapResponse.json not found")
 			.clone();
 		self.configuration_json = self
 			.files
-			.get(&base_path.join("configuration").join("beaconConfigurationSchema.json"))
-			.expect("beaconConfigurationSchema.json not found")
+			.get(&base_path.join("responses").join("beaconConfigurationResponse.json"))
+			.expect("beaconConfigurationResponse.json not found")
+			.clone();
+        self.entry_types_json = self
+			.files
+			.get(&base_path.join("responses").join("beaconEntryTypesResponse.json"))
+			.expect("beaconEntryTypesResponse.json not found")
 			.clone();
 	}
 }
