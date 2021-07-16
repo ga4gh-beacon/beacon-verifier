@@ -1,4 +1,9 @@
+use std::error::Error;
 use std::path::{Path, PathBuf};
+
+use url::Url;
+
+use crate::Json;
 
 pub fn copy_dir_recursively<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> Result<(), std::io::Error> {
 	let mut stack = vec![PathBuf::from(from.as_ref())];
@@ -46,4 +51,25 @@ pub fn copy_dir_recursively<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> R
 	}
 
 	Ok(())
+}
+
+pub fn ping_url(endpoint_url: &Url) -> Result<Json, Box<dyn Error>> {
+	// Query endpoint
+	let response = match ureq::get(endpoint_url.as_str()).call() {
+		Ok(response) => response,
+		Err(e) => {
+			log::error!("{:?}", e);
+			return Err(e.into());
+		},
+	};
+
+	let response_json = match response.into_json::<Json>() {
+		Ok(response_json) => response_json,
+		Err(e) => {
+			log::error!("{:?}", e);
+			return Err(e.into());
+		},
+	};
+
+	Ok(response_json)
 }

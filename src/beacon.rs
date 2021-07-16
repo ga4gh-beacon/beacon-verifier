@@ -3,18 +3,20 @@ use std::path::{Path, PathBuf};
 
 use url::Url;
 
-use crate::interface::{BeaconOutput, EntityOutput};
+use crate::framework::Framework;
+use crate::interface::{BeaconOutput, EndpointOutput};
 use crate::spec::{Entity, Spec};
-use crate::Json;
+use crate::{utils, Json};
 
 pub struct Beacon {
 	name: String,
 	url: Url,
 	spec: Spec,
+	framework: Framework,
 }
 
 impl Beacon {
-	pub fn new(spec: Spec, url: Url) -> Result<Self, Box<dyn Error>> {
+	pub fn new(spec: Spec, framework: Framework, url: Url) -> Result<Self, Box<dyn Error>> {
 		let mut info_url = url.clone();
 		info_url.set_path(Path::new(url.path()).join("info").to_str().unwrap_or(""));
 		let info: Json = ureq::get(&info_url.to_string()).call()?.into_json()?;
@@ -33,7 +35,43 @@ impl Beacon {
 			name_json.to_string()
 		};
 
-		Ok(Self { name, url, spec })
+		Ok(Self {
+			name,
+			url,
+			spec,
+			framework,
+		})
+	}
+
+	fn valid_schema(&self, schema: &Json, instance: &Json) -> Option<bool> {
+		let json_schema = match jsonschema::JSONSchema::options().with_meta_schemas().compile(schema) {
+			Ok(schema) => schema,
+			Err(e) => {
+				log::error!("{:?}", e);
+				return None;
+			},
+		};
+
+		let valid = match json_schema.validate(instance) {
+			Ok(_) => {
+				log::info!("VALID");
+				true
+			},
+			Err(errors) => {
+				log::error!("NOT VALID:");
+				for e in errors {
+					log::error!(
+						"   ERROR: {} on property path {} ({:?})",
+						e.to_string(),
+						e.instance_path.to_string(),
+						e
+					);
+				}
+				false
+			},
+		};
+
+		Some(valid)
 	}
 
 	fn valid_endpoint(&self, entity: &Entity, endpoint_url: &Url) -> Option<bool> {
@@ -99,8 +137,44 @@ impl Beacon {
 	}
 
 	pub fn validate(self) -> Result<BeaconOutput, Box<dyn Error>> {
-		let mut entities = Vec::new();
+		let mut output = Vec::new();
 
+		// Validate configuration
+		let mut configuration_url = self.url.clone();
+		configuration_url.set_path(Path::new(self.url.path()).join("configuration").to_str().unwrap_or(""));
+		let valid = match utils::ping_url(&configuration_url) {
+			Ok(configuration_json) => self.valid_schema(&self.framework.configuration_json, &configuration_json),
+			Err(e) => {
+				log::error!("{}", e);
+				None
+			},
+		};
+		output.push(EndpointOutput {
+			name: "Configuration".into(),
+			url: configuration_url,
+			valid,
+		});
+
+		// Validate beacon map
+		let mut beacon_map_url = self.url.clone();
+		beacon_map_url.set_path(Path::new(self.url.path()).join("map").to_str().unwrap_or(""));
+		let valid = match utils::ping_url(&beacon_map_url) {
+			Ok(beacon_map_json) => self.valid_schema(&self.framework.beacon_map_json, &beacon_map_json),
+			Err(e) => {
+				log::error!("{}", e);
+				None
+			},
+		};
+		output.push(EndpointOutput {
+			name: "BeaconMap".into(),
+			url: beacon_map_url,
+			valid,
+		});
+
+		// Validate endpoints configuration
+		// TODO: Validate OpenAPI 3.0
+
+		// Validate entities
 		for entity in &self.spec.entities {
 			// Get params
 			eprintln!();
@@ -115,7 +189,7 @@ impl Beacon {
 
 			let valid = self.valid_endpoint(entity, &replaced_url);
 
-			entities.push(EntityOutput {
+			output.push(EndpointOutput {
 				name: entity.name.clone(),
 				url: replaced_url.clone(),
 				valid,
@@ -125,7 +199,7 @@ impl Beacon {
 		Ok(BeaconOutput {
 			name: self.name,
 			url: self.url,
-			entities,
+			entities: output,
 		})
 	}
 }

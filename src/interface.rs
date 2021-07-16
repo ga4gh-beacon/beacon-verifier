@@ -8,11 +8,11 @@ use url::Url;
 pub struct BeaconOutput {
 	pub name: String,
 	pub url: Url,
-	pub entities: Vec<EntityOutput>,
+	pub entities: Vec<EndpointOutput>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EntityOutput {
+pub struct EndpointOutput {
 	pub name: String,
 	pub url: Url,
 	pub valid: Option<bool>,
