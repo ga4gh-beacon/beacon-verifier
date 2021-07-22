@@ -71,10 +71,9 @@ impl Beacon {
 				log::error!("NOT VALID:");
 				for e in errors {
 					log::error!(
-						"   ERROR: {} on property path {} ({:?})",
+						"   ERROR: {} on property path {}",
 						e.to_string(),
 						e.instance_path.to_string(),
-						e
 					);
 				}
 				false
