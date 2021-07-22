@@ -22,11 +22,21 @@ impl Beacon {
 		let info: Json = ureq::get(&info_url.to_string()).call()?.into_json()?;
 		log::trace!("{}", info);
 
-		let name_json = info
-			.get("response")
-			.unwrap_or_else(|| panic!("No 'response' in {}/info", url))
-			.get("name")
-			.unwrap_or_else(|| panic!("No 'name' in {}/info inside json object 'response'", url));
+		let name_json = if let Some(response) = info.get("response") {
+			if let Some(name) = response.get("name") {
+				name.clone()
+			}
+			else {
+				log::error!("Please look at https://github.com/ga4gh-beacon/beacon-framework-v2/blob/main/responses/sections/beaconInfoResults.json");
+				log::error!("No 'name' in {}/info inside json object 'response'", url);
+				Json::String("Unknown name".into())
+			}
+		}
+		else {
+			log::error!("Please look at https://github.com/ga4gh-beacon/beacon-framework-v2/blob/main/responses/beaconInfoResponse.json");
+			log::error!("No property 'response' in {}/info", url);
+			Json::String("Unknown name".into())
+		};
 
 		let name = if name_json.is_string() {
 			name_json.as_str().unwrap().to_string()
