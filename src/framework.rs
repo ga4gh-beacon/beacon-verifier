@@ -13,7 +13,7 @@ use crate::{utils, Json};
 pub struct Framework {
 	pub configuration_json: Json,
 	pub beacon_map_json: Json,
-    pub entry_types_json: Json,
+	pub entry_types_json: Json,
 	files: HashMap<PathBuf, Json>,
 }
 
@@ -52,7 +52,7 @@ impl Framework {
 		let mut framework = Self {
 			configuration_json: Json::Null,
 			beacon_map_json: Json::Null,
-            entry_types_json: Json::Null,
+			entry_types_json: Json::Null,
 			files: HashMap::new(),
 		};
 
@@ -88,7 +88,7 @@ impl Framework {
 			.get(&base_path.join("responses").join("beaconConfigurationResponse.json"))
 			.expect("beaconConfigurationResponse.json not found")
 			.clone();
-        self.entry_types_json = self
+		self.entry_types_json = self
 			.files
 			.get(&base_path.join("responses").join("beaconEntryTypesResponse.json"))
 			.expect("beaconEntryTypesResponse.json not found")
