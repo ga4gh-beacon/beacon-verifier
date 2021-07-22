@@ -113,34 +113,39 @@ impl Beacon {
 		};
 
 		log::debug!("Validating...");
-		let valid = response_json["resultSets"].as_array().unwrap().iter().all(|resp| {
-			if resp["exists"] == "false" {
-				return true;
-			}
+		let resp = if let Some(r) = response_json["resultSets"].as_object() {
+			r
+		}
+		else {
+			log::error!("No resultSets in response");
+			return Some(false);
+		};
 
-			resp["results"]
-				.as_array()
-				.unwrap()
-				.iter()
-				.all(|result| match schema.validate(result) {
-					Ok(_) => {
-						log::info!("VALID");
-						true
-					},
-					Err(errors) => {
-						log::error!("NOT VALID:");
-						for e in errors {
-							log::error!(
-								"   ERROR: {} on property path {} ({})",
-								e.to_string(),
-								e.instance_path.to_string(),
-								e
-							);
-						}
-						false
-					},
-				})
-		});
+		if resp["exists"] == "false" {
+			return Some(true);
+		}
+
+		let valid = resp["results"]
+			.as_array()
+			.unwrap()
+			.iter()
+			.all(|result| match schema.validate(result) {
+				Ok(_) => {
+					log::info!("VALID");
+					true
+				},
+				Err(errors) => {
+					log::error!("NOT VALID:");
+					for e in errors {
+						log::error!(
+							"   ERROR: {} on property path {}",
+							e.to_string(),
+							e.instance_path.to_string(),
+						);
+					}
+					false
+				},
+			});
 
 		Some(valid)
 	}
