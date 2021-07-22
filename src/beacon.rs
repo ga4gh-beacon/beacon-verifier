@@ -149,6 +149,7 @@ impl Beacon {
 		let mut output = Vec::new();
 
 		// Validate configuration
+		eprintln!();
 		let mut configuration_url = self.url.clone();
 		configuration_url.set_path(Path::new(self.url.path()).join("configuration").to_str().unwrap_or(""));
 		let valid = match utils::ping_url(&configuration_url) {
@@ -165,6 +166,7 @@ impl Beacon {
 		});
 
 		// Validate beacon map
+		eprintln!();
 		let mut beacon_map_url = self.url.clone();
 		beacon_map_url.set_path(Path::new(self.url.path()).join("map").to_str().unwrap_or(""));
 		let valid = match utils::ping_url(&beacon_map_url) {
@@ -181,6 +183,7 @@ impl Beacon {
 		});
 
 		// Validate entry types
+		eprintln!();
 		let mut entry_types_url = self.url.clone();
 		entry_types_url.set_path(Path::new(self.url.path()).join("entry_types").to_str().unwrap_or(""));
 		let valid = match utils::ping_url(&entry_types_url) {
