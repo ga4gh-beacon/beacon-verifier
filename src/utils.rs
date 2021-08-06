@@ -1,11 +1,11 @@
-use std::error::Error;
 use std::path::{Path, PathBuf};
 
 use url::Url;
 
-use crate::Json;
+use crate::error::VerifierError;
+use crate::{error, Json};
 
-pub fn copy_dir_recursively<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> Result<(), std::io::Error> {
+pub fn copy_dir_recursively<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> Result<(), VerifierError> {
 	let mut stack = vec![PathBuf::from(from.as_ref())];
 
 	let output_root = PathBuf::from(to.as_ref());
@@ -53,13 +53,13 @@ pub fn copy_dir_recursively<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> R
 	Ok(())
 }
 
-pub fn ping_url(endpoint_url: &Url) -> Result<Json, Box<dyn Error>> {
+pub fn ping_url(endpoint_url: &Url) -> Result<Json, VerifierError> {
 	// Query endpoint
 	let response = match ureq::get(endpoint_url.as_str()).call() {
 		Ok(response) => response,
 		Err(e) => {
 			log::error!("{:?}", e);
-			return Err(e.into());
+			return Err(error::VerifierError::UreqError(Box::new(e)));
 		},
 	};
 

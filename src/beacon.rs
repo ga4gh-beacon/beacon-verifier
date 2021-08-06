@@ -1,8 +1,8 @@
-use std::error::Error;
 use std::path::{Path, PathBuf};
 
 use url::Url;
 
+use crate::error::VerifierError;
 use crate::framework::Framework;
 use crate::interface::{BeaconOutput, EndpointOutput};
 use crate::spec::{Entity, Spec};
@@ -16,26 +16,39 @@ pub struct Beacon {
 }
 
 impl Beacon {
-	pub fn new(spec: Spec, framework: Framework, url: Url) -> Result<Self, Box<dyn Error>> {
+	pub fn new(spec: Spec, framework: Framework, url: Url) -> Self {
 		let mut info_url = url.clone();
 		info_url.set_path(Path::new(url.path()).join("info").to_str().unwrap_or(""));
-		let info: Json = ureq::get(&info_url.to_string()).call()?.into_json()?;
+		let info: Json = ureq::get(&info_url.to_string()).call().unwrap().into_json().unwrap();
 		log::trace!("{}", info);
 
+		Self {
+			name: Self::get_name(&info, &url),
+			url,
+			spec,
+			framework,
+		}
+	}
+
+	fn get_name(info: &Json, url: &Url) -> String {
 		let name_json = if let Some(response) = info.get("response") {
 			if let Some(name) = response.get("name") {
 				name.clone()
 			}
 			else {
-				log::error!("Please look at https://github.com/ga4gh-beacon/beacon-framework-v2/blob/main/responses/sections/beaconInfoResults.json");
-				log::error!("No 'name' in {}/info inside json object 'response'", url);
-				Json::String("Unknown name".into())
+				log::error!(
+					"{}",
+					VerifierError::BadInfo(format!("No 'name' in {}/info inside json object 'response'", url))
+				);
+				Json::String("Unknown name (bad /info)".into())
 			}
 		}
 		else {
-			log::error!("Please look at https://github.com/ga4gh-beacon/beacon-framework-v2/blob/main/responses/beaconInfoResponse.json");
-			log::error!("No property 'response' in {}/info", url);
-			Json::String("Unknown name".into())
+			log::error!(
+				"{}",
+				VerifierError::BadInfo(format!("No 'response' property in {}/info", url))
+			);
+			Json::String("Unknown name (bad /info)".into())
 		};
 
 		let name = if name_json.is_string() {
@@ -45,51 +58,49 @@ impl Beacon {
 			name_json.to_string()
 		};
 
-		Ok(Self {
-			name,
-			url,
-			spec,
-			framework,
-		})
+		name
 	}
 
-	fn valid_schema(&self, schema: &Json, instance: &Json) -> Option<bool> {
+	fn valid_schema(&self, schema: &Json, instance: &Json) -> (Option<bool>, Option<VerifierError>) {
 		let json_schema = match jsonschema::JSONSchema::options().with_meta_schemas().compile(schema) {
 			Ok(schema) => schema,
 			Err(e) => {
 				log::error!("{:?}", e);
-				return None;
+				return (None, Some(VerifierError::BadSchema));
 			},
 		};
 
-		let valid = match json_schema.validate(instance) {
+		let (valid, error) = match json_schema.validate(instance) {
 			Ok(_) => {
 				log::info!("VALID");
-				true
+				(true, None)
 			},
 			Err(errors) => {
 				log::error!("NOT VALID:");
+				let mut er = String::new();
 				for e in errors {
 					log::error!(
 						"   ERROR: {} on property path {}",
 						e.to_string(),
 						e.instance_path.to_string(),
 					);
+					er.push_str(&e.to_string());
+					er.push('\n');
 				}
-				false
+				(false, Some(VerifierError::BadResponse(er)))
 			},
 		};
 
-		Some(valid)
+		(Some(valid), error)
 	}
 
-	fn valid_endpoint(&self, entity: &Entity, endpoint_url: &Url) -> Option<bool> {
+	fn valid_endpoint(&self, entity: &Entity, endpoint_url: &Url) -> (Option<bool>, Option<VerifierError>) {
 		// Query endpoint
 		let response = match ureq::get(endpoint_url.as_str()).call() {
 			Ok(response) => response,
 			Err(e) => {
 				log::error!("{:?}", e);
-				return None;
+				return (None, Some(VerifierError::UnresponsiveEndpoint(endpoint_url.clone())));
 			},
 		};
 
@@ -97,7 +108,7 @@ impl Beacon {
 			Ok(response_json) => response_json,
 			Err(e) => {
 				log::error!("{:?}", e);
-				return Some(false);
+				return (Some(false), Some(VerifierError::ResponseIsNotJson));
 			},
 		};
 
@@ -108,7 +119,7 @@ impl Beacon {
 			Ok(schema) => schema,
 			Err(e) => {
 				log::error!("{:?}", e);
-				return None;
+				return (None, Some(VerifierError::BadSchema));
 			},
 		};
 
@@ -118,13 +129,14 @@ impl Beacon {
 		}
 		else {
 			log::error!("No resultSets in response");
-			return Some(false);
+			return (Some(false), Some(VerifierError::NoResultSets));
 		};
 
 		if resp["exists"] == "false" {
-			return Some(true);
+			return (Some(true), None);
 		}
 
+		let error = None;
 		let valid = resp["results"]
 			.as_array()
 			.unwrap()
@@ -147,61 +159,64 @@ impl Beacon {
 				},
 			});
 
-		Some(valid)
+		(Some(valid), error)
 	}
 
-	pub fn validate(self) -> Result<BeaconOutput, Box<dyn Error>> {
+	pub fn validate(self) -> BeaconOutput {
 		let mut output = Vec::new();
 
 		// Validate configuration
 		eprintln!();
 		let mut configuration_url = self.url.clone();
 		configuration_url.set_path(Path::new(self.url.path()).join("configuration").to_str().unwrap_or(""));
-		let valid = match utils::ping_url(&configuration_url) {
+		let (valid, error) = match utils::ping_url(&configuration_url) {
 			Ok(configuration_json) => self.valid_schema(&self.framework.configuration_json, &configuration_json),
 			Err(e) => {
 				log::error!("{}", e);
-				None
+				(None, Some(e))
 			},
 		};
 		output.push(EndpointOutput {
 			name: "Configuration".into(),
 			url: configuration_url,
 			valid,
+			error: error.map(|e| e.to_string())
 		});
 
 		// Validate beacon map
 		eprintln!();
 		let mut beacon_map_url = self.url.clone();
 		beacon_map_url.set_path(Path::new(self.url.path()).join("map").to_str().unwrap_or(""));
-		let valid = match utils::ping_url(&beacon_map_url) {
+		let (valid, error) = match utils::ping_url(&beacon_map_url) {
 			Ok(beacon_map_json) => self.valid_schema(&self.framework.beacon_map_json, &beacon_map_json),
 			Err(e) => {
 				log::error!("{}", e);
-				None
+				(None, Some(e))
 			},
 		};
 		output.push(EndpointOutput {
 			name: "BeaconMap".into(),
 			url: beacon_map_url,
 			valid,
+			error: error.map(|e| e.to_string())
 		});
 
 		// Validate entry types
 		eprintln!();
 		let mut entry_types_url = self.url.clone();
 		entry_types_url.set_path(Path::new(self.url.path()).join("entry_types").to_str().unwrap_or(""));
-		let valid = match utils::ping_url(&entry_types_url) {
+		let (valid, error) = match utils::ping_url(&entry_types_url) {
 			Ok(entry_types_json) => self.valid_schema(&self.framework.entry_types_json, &entry_types_json),
 			Err(e) => {
 				log::error!("{}", e);
-				None
+				(None, Some(e))
 			},
 		};
 		output.push(EndpointOutput {
 			name: "EntryTypes".into(),
 			url: entry_types_url,
 			valid,
+			error: error.map(|e| e.to_string())
 		});
 
 		// Validate endpoints configuration
@@ -220,19 +235,20 @@ impl Beacon {
 			replaced_url.set_path(new_path.to_str().unwrap_or(""));
 			log::debug!("GET {}", replaced_url);
 
-			let valid = self.valid_endpoint(entity, &replaced_url);
+			let (valid, error) = self.valid_endpoint(entity, &replaced_url);
 
 			output.push(EndpointOutput {
 				name: entity.name.clone(),
 				url: replaced_url.clone(),
 				valid,
-			})
+				error: error.map(|e| e.to_string()),
+			});
 		}
 
-		Ok(BeaconOutput {
+		BeaconOutput {
 			name: self.name,
 			url: self.url,
 			entities: output,
-		})
+		}
 	}
 }

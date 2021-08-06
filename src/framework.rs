@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::error::Error;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::path::{Path, PathBuf};
@@ -7,6 +6,7 @@ use std::path::{Path, PathBuf};
 use git2::Repository;
 use url::Url;
 
+use crate::error::VerifierError;
 use crate::{utils, Json};
 
 #[derive(Debug, Clone)]
@@ -18,7 +18,7 @@ pub struct Framework {
 }
 
 impl Framework {
-	pub fn load(location: &Url) -> Result<Self, Box<dyn Error>> {
+	pub fn load(location: &Url) -> Result<Self, VerifierError> {
 		let dir = tempfile::tempdir().expect("Could not create temporary directory");
 
 		if location.scheme() == "file" {
@@ -69,10 +69,10 @@ impl Framework {
 		Ok(framework)
 	}
 
-	fn add(&mut self, path: &Path) -> Result<(), Box<dyn Error>> {
+	fn add(&mut self, path: &Path) -> Result<(), VerifierError> {
 		log::debug!("Adding JSON file: {:?}", path);
-		let file = File::open(path)?;
-		let json = serde_json::from_reader(file)?;
+		let file = File::open(path).unwrap();
+		let json = serde_json::from_reader(file).map_err(|_| VerifierError::BadFramework)?;
 		self.files.insert(path.to_path_buf(), json);
 		Ok(())
 	}

@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::error::Error;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::path::{Path, PathBuf};
@@ -7,6 +6,7 @@ use std::path::{Path, PathBuf};
 use git2::Repository;
 use url::Url;
 
+use crate::error::VerifierError;
 use crate::framework::Framework;
 use crate::interface::{Endpoint, EntryType};
 use crate::{utils, Json};
@@ -28,7 +28,7 @@ pub struct Spec {
 }
 
 impl Spec {
-	pub fn load(location: &Url) -> Result<Self, Box<dyn Error>> {
+	pub fn load(location: &Url) -> Result<Self, VerifierError> {
 		let dir = tempfile::tempdir().expect("Could not create temporary directory");
 
 		if location.scheme() == "file" {
@@ -83,10 +83,10 @@ impl Spec {
 		Ok(spec)
 	}
 
-	fn add(&mut self, path: &Path) -> Result<(), Box<dyn Error>> {
+	fn add(&mut self, path: &Path) -> Result<(), VerifierError> {
 		log::debug!("Adding JSON file: {:?}", path);
-		let file = File::open(path)?;
-		let json = serde_json::from_reader(file)?;
+		let file = File::open(path).unwrap();
+		let json = serde_json::from_reader(file).map_err(|_| VerifierError::BadJson)?;
 		self.files.insert(path.to_path_buf(), json);
 		Ok(())
 	}
@@ -143,12 +143,12 @@ impl Spec {
 				schema: entity_schema,
 				name: endpoint.entry_type,
 				url: endpoint.root_url,
-			})
+			});
 		}
 	}
 
-	pub fn validate(&self, _framework: &Framework) -> Result<usize, Box<dyn Error>> {
+	pub fn validate(&self, _framework: &Framework) -> usize {
 		// TODO: Validate model against the framework
-		Ok(self.entities.len())
+		self.entities.len()
 	}
 }

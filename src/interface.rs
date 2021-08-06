@@ -16,6 +16,7 @@ pub struct EndpointOutput {
 	pub name: String,
 	pub url: Url,
 	pub valid: Option<bool>,
+	pub error: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
