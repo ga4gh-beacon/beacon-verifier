@@ -49,17 +49,20 @@ beacon-verifier https://beacon-url.com/ > /path/to/output
             "individuals": {
                 "name": "Individuals",
                 "url": "https://.../individuals",
-                "valid": true
+                "valid": true,
+                "error": null,
             },
             "variants": {
                 "name": "Variants",
                 "url": "https://.../variants",
-                "valid": false
+                "valid": false,
+                "error": "Bad schema"
             },
             "biosamples": {
                 "name": "Biosamples",
                 "url": "https://.../biosamples",
-                "valid": null
+                "valid": null,
+                "error": "Unresponsive endpoint"
             }
         }
     }
@@ -80,6 +83,7 @@ struct Beacon {
 struct Entity {
     name: String,
     url: String,
-    valid: Option<bool>
+    valid: Option<bool>,
+    error: Option<VerifierError>
 }
 ```
