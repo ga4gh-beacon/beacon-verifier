@@ -2,8 +2,8 @@ use thiserror::Error;
 
 #[derive(Error, Debug)]
 pub enum VerifierError {
-	#[error("ureq Error")]
-	UreqError(#[from] Box<ureq::Error>),
+	#[error("Request error {0}")]
+	RequestError(#[from] Box<ureq::Error>),
 
 	#[error("IO Error")]
 	IoError(#[from] std::io::Error),
@@ -31,4 +31,10 @@ pub enum VerifierError {
 
 	#[error("Response does not match the schema: {0}")]
 	BadResponse(String),
+
+	#[error("Unexpected HTTP status code")]
+	BadStatus,
+
+	#[error("No ids were extracted from the main entity endpoint")]
+	NoIds,
 }

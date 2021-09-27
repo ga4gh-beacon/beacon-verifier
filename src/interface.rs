@@ -4,19 +4,13 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
+use crate::output::EndpointOutput;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BeaconOutput {
 	pub name: String,
 	pub url: Url,
 	pub entities: Vec<EndpointOutput>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct EndpointOutput {
-	pub name: String,
-	pub url: Url,
-	pub valid: Option<bool>,
-	pub error: Option<String>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -58,4 +52,22 @@ pub struct OntologyTerm {
 #[serde(rename_all = "camelCase")]
 pub struct DefaultSchema {
 	pub reference_to_schema_definition: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub enum FilteringTermType {
+	OntologyTerm,
+	Alphanumeric,
+	Custom,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct FilteringTerm {
+	ft_type: FilteringTermType,
+	pub url: Url,
+	id: String,
+	label: Option<String>,
+	scope: Option<String>,
 }

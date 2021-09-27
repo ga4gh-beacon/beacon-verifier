@@ -1,16 +1,18 @@
-#![allow(clippy::module_name_repetitions, clippy::unused_self)]
+#![allow(clippy::module_name_repetitions, clippy::unused_self, clippy::missing_const_for_fn)]
 
 use clap::{crate_authors, crate_version, load_yaml, App, AppSettings};
 use url::Url;
 
 use crate::beacon::Beacon;
 use crate::framework::Framework;
+use crate::interface::BeaconOutput;
 use crate::spec::Spec;
 
 mod beacon;
 mod error;
 mod framework;
 mod interface;
+mod output;
 mod spec;
 mod utils;
 
@@ -52,13 +54,22 @@ fn main() {
 	// Validate beacons
 	if !matches.is_present("only-spec") {
 		// Load beacons
-		let mut output = Vec::new();
-		for beacon_url in matches.values_of_t::<Url>("URLS").unwrap() {
-			log::info!("Validating implementation on {}", beacon_url);
-			let beacon = Beacon::new(spec.clone(), framework.clone(), beacon_url);
-			let beacon_output = beacon.validate();
-			output.push(beacon_output);
-		}
+		let output: Vec<BeaconOutput> = matches.values_of_t::<Url>("URLS").unwrap()
+			.into_iter()
+			.map(|beacon_url| {
+				log::info!("Validating implementation on {}", beacon_url);
+				match Beacon::new(spec.clone(), framework.clone(), &beacon_url) {
+					Ok(beacon) => beacon.validate(),
+					Err(e) => {
+						BeaconOutput {
+							name: format!("Unknown Beacon ({})", e),
+							url: beacon_url,
+							entities: Vec::new()
+						}
+					}
+				}
+			})
+			.collect();
 
 		let payload = serde_json::to_string_pretty(&output).unwrap();
 		println!("{}", payload);

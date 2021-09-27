@@ -18,7 +18,7 @@ args:
         long: spec
         about: Location of the spec
         takes_value: true
-        default_value: https://github.com/MrRobb/beacon-v2-Models/BEACON-V2-draft3-Model
+        default_value: https://github.com/MrRobb/beacon-v2-Models/BEACON-V2-draft4-Model
     - framework:
         required: false
         short: f
@@ -26,15 +26,8 @@ args:
         about: Beacon Framework
         takes_value: true
         default_value: https://github.com/ga4gh-beacon/beacon-framework-v2
-    - output:
-        required: true
-        short: o
-        long: output
-        about: Location of the output
-        takes_value: true
-        value_name: output_path
-        default_value: "./output.json"
     - URLS:
         required: true
         about: Urls to the Beacon implementations
-        multiple: true
+        takes_value: true
+        multiple_values: true

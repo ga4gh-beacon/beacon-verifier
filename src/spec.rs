@@ -8,14 +8,17 @@ use url::Url;
 
 use crate::error::VerifierError;
 use crate::framework::Framework;
-use crate::interface::{Endpoint, EntryType};
+use crate::interface::{Endpoint, EntryType, RelatedEndpoint};
 use crate::{utils, Json};
 
 #[derive(Debug, Clone)]
 pub struct Entity {
 	pub name: String,
 	pub url: Url,
+	pub url_single: Option<Url>,
 	pub schema: Json,
+	pub filtering_terms_url: Option<Url>,
+	pub related_endpoints: Option<HashMap<String, RelatedEndpoint>>,
 }
 
 #[derive(Debug, Clone)]
@@ -116,8 +119,17 @@ impl Spec {
 			.into_iter()
 			.map(|(_, val)| {
 				let entry_type: EntryType = serde_json::from_value(val.clone()).unwrap();
-				let schema_rel_path = entry_type.default_schema.reference_to_schema_definition;
-				log::trace!("Loading schema on {:?} + {:?}", base_path, schema_rel_path);
+				let mut schema_rel_path = entry_type.default_schema.reference_to_schema_definition;
+				if schema_rel_path.starts_with("http") {
+					let schema_rel_path_url = Url::parse(&schema_rel_path).unwrap();
+					schema_rel_path = Path::new(schema_rel_path_url.path())
+						.components()
+						.skip(1)
+						.collect::<PathBuf>()
+						.to_string_lossy()
+						.to_string();
+				}
+				log::debug!("Loading schema on {:?} + {:?}", base_path, schema_rel_path);
 				let schema_abs_path = base_path.join(schema_rel_path);
 				log::debug!("Loading schema on {:?}", schema_abs_path);
 				let schema_file = File::open(schema_abs_path.canonicalize().unwrap()).expect("File not found");
@@ -143,6 +155,9 @@ impl Spec {
 				schema: entity_schema,
 				name: endpoint.entry_type,
 				url: endpoint.root_url,
+				url_single: endpoint.single_entry_url,
+				filtering_terms_url: endpoint.filtering_terms_url,
+				related_endpoints: endpoint.endpoints,
 			});
 		}
 	}

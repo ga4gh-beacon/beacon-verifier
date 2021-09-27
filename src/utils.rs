@@ -3,6 +3,8 @@ use std::path::{Path, PathBuf};
 use url::Url;
 
 use crate::error::VerifierError;
+use crate::interface::FilteringTerm;
+use crate::output::EndpointReport;
 use crate::{error, Json};
 
 pub fn copy_dir_recursively<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> Result<(), VerifierError> {
@@ -58,8 +60,14 @@ pub fn ping_url(endpoint_url: &Url) -> Result<Json, VerifierError> {
 	let response = match ureq::get(endpoint_url.as_str()).call() {
 		Ok(response) => response,
 		Err(e) => {
-			log::error!("{:?}", e);
-			return Err(error::VerifierError::UreqError(Box::new(e)));
+			return if e.kind() == ureq::ErrorKind::HTTP {
+				log::error!("{:?}", e);
+				Err(error::VerifierError::BadStatus)
+			}
+			else {
+				log::error!("{:?}", e);
+				Err(error::VerifierError::RequestError(Box::new(e)))
+			};
 		},
 	};
 
@@ -67,9 +75,63 @@ pub fn ping_url(endpoint_url: &Url) -> Result<Json, VerifierError> {
 		Ok(response_json) => response_json,
 		Err(e) => {
 			log::error!("{:?}", e);
-			return Err(e.into());
+			return Err(VerifierError::BadJson);
 		},
 	};
 
 	Ok(response_json)
+}
+
+pub fn url_join(url1: &Url, url2: &Url) -> Url {
+	let mut replaced_url = url1.clone();
+	let new_path: PathBuf = PathBuf::from(replaced_url.path())
+		.components()
+		.chain(Path::new(url2.path()).components().skip(1))
+		.collect();
+	replaced_url.set_path(new_path.to_str().unwrap_or(""));
+	replaced_url
+}
+
+pub fn replace_vars(url: &Url, vars: Vec<(&str, &str)>) -> Url {
+	let mut url_string = url.to_string();
+	for (var_key, var_val) in vars {
+		url_string = url.to_string().replace(&format!("%7B{}%7D", var_key), var_val);
+	}
+	Url::parse(&url_string).unwrap()
+}
+
+pub fn get_filtering_terms(url: &Url) -> Vec<FilteringTerm> {
+	// Query endpoint
+	match ureq::get(url.as_str()).call() {
+		Ok(response) => {
+			let j = response.into_json::<Json>().unwrap();
+			serde_json::from_value(j).unwrap()
+		},
+		Err(_) => Vec::new(),
+	}
+}
+
+pub fn get_ids(report: &EndpointReport) -> Option<String> {
+	if report.valid.is_none() || !report.valid.unwrap() || report.output.is_none() {
+		return None
+	}
+	let output = report.output.clone().unwrap();
+	log::debug!("get_ids from: {}", output);
+	output["id"].as_str().map(std::string::ToString::to_string)
+}
+
+#[cfg(test)]
+mod tests {
+	use url::Url;
+
+	use crate::utils::replace_vars;
+
+	#[test]
+	fn test_replace_vars() {
+		let replaced = replace_vars(
+			&Url::parse("https://google.com/biosamples/{id}").unwrap(),
+			vec![("id", "my_id")],
+		);
+		assert_eq!(replaced.to_string(), "https://google.com/biosamples/my_id");
+	}
 }

@@ -15,7 +15,7 @@ readme = "README.md"
 [dependencies]
 
 # Config
-clap = { version = "3.0.0-beta", features = ["yaml"] }
+clap = { version = "3.0.0-beta.4", features = ["yaml"] }
 
 # Filesystem
 walkdir = "2.3.2"
