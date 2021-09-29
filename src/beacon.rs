@@ -204,17 +204,17 @@ impl Beacon {
 
 		// Validate configuration
 		let report = self.validate_against_framework("configuration", &self.framework.configuration_json);
-		output.push(report.name("Configuration"));
+		output.push("Configuration".into(), report.name("Configuration"));
 
 		// Validate beacon map
 		eprintln!();
 		let report = self.validate_against_framework("map", &self.framework.beacon_map_json);
-		output.push(report.name("BeaconMap"));
+		output.push("BeaconMap".into(), report.name("BeaconMap"));
 
 		// Validate entry types
 		eprintln!();
 		let report = self.validate_against_framework("entry_types", &self.framework.entry_types_json);
-		output.push(report.name("EntryTypes"));
+		output.push("EntryTypes".into(), report.name("EntryTypes"));
 
 		// Validate endpoints configuration
 		// TODO: Validate OpenAPI 3.0
@@ -230,19 +230,32 @@ impl Beacon {
 			// Validate /endpoint
 			let report = self.valid_endpoint(entity, &replaced_url);
 			let ids = utils::get_ids(&report);
-			output.push(report.name(&entity.name.clone()).url(replaced_url.clone()));
+			output.push(
+				entity.name.clone(),
+				report
+					.name(&format!("{} all entries", entity.name.clone()))
+					.url(replaced_url.clone()),
+			);
 
 			// Validate /endpoint/{id}
 			if let Some(url_single) = &entity.url_single {
 				let mut replaced_url_single = utils::url_join(&self.url, url_single);
-				replaced_url_single = utils::replace_vars(&replaced_url_single, vec![("id", &ids.clone().unwrap_or_else(|| String::from("<id>")))]);
+				replaced_url_single = utils::replace_vars(
+					&replaced_url_single,
+					vec![("id", &ids.clone().unwrap_or_else(|| String::from("_id_")))],
+				);
 				let report_ids = if ids.is_none() {
 					EndpointReport::new().null(VerifierError::NoIds)
 				}
 				else {
 					self.valid_endpoint(entity, &replaced_url_single)
 				};
-				output.push(report_ids.name(&entity.name.clone()).url(replaced_url_single.clone()));
+				output.push(
+					entity.name.clone(),
+					report_ids
+						.name(&format!("{} single entry", entity.name.clone()))
+						.url(replaced_url_single.clone()),
+				);
 			}
 
 			// Validate /endpoint?filtering_term=value
@@ -251,7 +264,12 @@ impl Beacon {
 				for filtering_term in available_filtering_terms {
 					let replaced_url_filter = utils::url_join(&self.url, &filtering_term.url);
 					let report = self.valid_endpoint(entity, &replaced_url_filter);
-					output.push(report.name(&entity.name.clone()).url(replaced_url_filter.clone()));
+					output.push(
+						entity.name.clone(),
+						report
+							.name(&format!("{} filtering terms", entity.name.clone()))
+							.url(replaced_url_filter.clone()),
+					);
 				}
 			}
 
@@ -259,14 +277,30 @@ impl Beacon {
 			if let Some(related_endpoints) = &entity.related_endpoints {
 				for (_, related_enpoint) in related_endpoints.iter() {
 					let mut replaced_url_related = utils::url_join(&self.url, &related_enpoint.url);
+					replaced_url_related = utils::replace_vars(
+						&replaced_url_related,
+						vec![("id", &ids.clone().unwrap_or_else(|| String::from("_id_")))],
+					);
 					let report_ids = if ids.is_none() {
 						EndpointReport::new().null(VerifierError::NoIds)
 					}
 					else {
-						replaced_url_related = utils::replace_vars(&replaced_url_related, vec![("id", &ids.clone().unwrap_or_else(|| String::from("<id>")))]);
+						replaced_url_related = utils::replace_vars(
+							&replaced_url_related,
+							vec![("id", &ids.clone().unwrap_or_else(|| String::from("_id_")))],
+						);
 						self.valid_endpoint(entity, &replaced_url_related)
 					};
-					output.push(report_ids.name(&entity.name.clone()).url(replaced_url_related.clone()));
+					output.push(
+						entity.name.clone(),
+						report_ids
+							.name(&format!(
+								"{} related with a single entry of {}",
+								related_enpoint.returned_entry_type,
+								entity.name.clone()
+							))
+							.url(replaced_url_related.clone()),
+					);
 				}
 			}
 		}

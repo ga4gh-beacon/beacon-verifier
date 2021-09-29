@@ -1,5 +1,7 @@
 #![allow(clippy::module_name_repetitions, clippy::unused_self, clippy::missing_const_for_fn)]
 
+use std::collections::HashMap;
+
 use clap::{crate_authors, crate_version, load_yaml, App, AppSettings};
 use url::Url;
 
@@ -54,19 +56,19 @@ fn main() {
 	// Validate beacons
 	if !matches.is_present("only-spec") {
 		// Load beacons
-		let output: Vec<BeaconOutput> = matches.values_of_t::<Url>("URLS").unwrap()
+		let output: Vec<BeaconOutput> = matches
+			.values_of_t::<Url>("URLS")
+			.unwrap()
 			.into_iter()
 			.map(|beacon_url| {
 				log::info!("Validating implementation on {}", beacon_url);
 				match Beacon::new(spec.clone(), framework.clone(), &beacon_url) {
 					Ok(beacon) => beacon.validate(),
-					Err(e) => {
-						BeaconOutput {
-							name: format!("Unknown Beacon ({})", e),
-							url: beacon_url,
-							entities: Vec::new()
-						}
-					}
+					Err(e) => BeaconOutput {
+						name: format!("Unknown Beacon ({})", e),
+						url: beacon_url,
+						entities: HashMap::new(),
+					},
 				}
 			})
 			.collect();

@@ -113,7 +113,7 @@ pub fn get_filtering_terms(url: &Url) -> Vec<FilteringTerm> {
 
 pub fn get_ids(report: &EndpointReport) -> Option<String> {
 	if report.valid.is_none() || !report.valid.unwrap() || report.output.is_none() {
-		return None
+		return None;
 	}
 	let output = report.output.clone().unwrap();
 	log::debug!("get_ids from: {}", output);

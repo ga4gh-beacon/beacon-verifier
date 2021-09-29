@@ -10,7 +10,7 @@ use crate::output::EndpointOutput;
 pub struct BeaconOutput {
 	pub name: String,
 	pub url: Url,
-	pub entities: Vec<EndpointOutput>,
+	pub entities: HashMap<String, Vec<EndpointOutput>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

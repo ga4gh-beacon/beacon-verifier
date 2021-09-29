@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use serde::{Deserialize, Serialize};
 use url::Url;
 
@@ -13,24 +15,41 @@ pub struct EndpointOutput {
 }
 
 pub struct Output {
-	results: Vec<EndpointOutput>,
+	results: HashMap<String, Vec<EndpointOutput>>,
 }
 
 impl Output {
-	pub const fn new() -> Self {
-		Self { results: Vec::new() }
+	pub fn new() -> Self {
+		Self {
+			results: HashMap::new(),
+		}
 	}
 
-	pub fn push(&mut self, report: EndpointReport) {
-		self.results.push(EndpointOutput {
-			name: report.name.unwrap(),
-			url: report.url.unwrap(),
-			valid: report.valid,
-			error: report.error.map(|e| e.to_string()),
-		});
+	pub fn push(&mut self, entity: String, report: EndpointReport) {
+		match self.results.get_mut(&entity) {
+			Some(endpoints) => {
+				endpoints.push(EndpointOutput {
+					name: report.name.unwrap(),
+					url: report.url.unwrap(),
+					valid: report.valid,
+					error: report.error.map(|e| e.to_string()),
+				});
+			},
+			None => {
+				self.results.insert(
+					entity,
+					vec![EndpointOutput {
+						name: report.name.unwrap(),
+						url: report.url.unwrap(),
+						valid: report.valid,
+						error: report.error.map(|e| e.to_string()),
+					}],
+				);
+			},
+		}
 	}
 
-	pub fn finish(self) -> Vec<EndpointOutput> {
+	pub fn finish(self) -> HashMap<String, Vec<EndpointOutput>> {
 		log::debug!("Compiling results...");
 		self.results
 	}
