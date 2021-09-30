@@ -8,7 +8,7 @@ pub enum VerifierError {
 	#[error("IO Error")]
 	IoError(#[from] std::io::Error),
 
-	#[error("File Error")]
+	#[error("Bad json")]
 	BadJson,
 
 	#[error("Bad /info endpoint: {0}")]
