@@ -20,10 +20,8 @@ impl Beacon {
 	pub fn new(spec: Spec, framework: Framework, url: &Url) -> Result<Self, VerifierError> {
 		let mut info_url = url.clone();
 		info_url.set_path(Path::new(url.path()).join("info").to_str().unwrap_or(""));
-		let info: Json = ureq::get(&info_url.to_string())
-			.call()
-			.map_err(|e| VerifierError::RequestError(Box::new(e)))?
-			.into_json()
+		let info: Json = reqwest::blocking::get(&info_url.to_string())?
+			.json()
 			.unwrap();
 		log::trace!("{}", info);
 
@@ -101,11 +99,11 @@ impl Beacon {
 
 	fn valid_endpoint(&self, entity: &Entity, endpoint_url: &Url) -> EndpointReport {
 		// Query endpoint
-		let response = match ureq::get(endpoint_url.as_str()).call() {
+		let response = match reqwest::blocking::get(endpoint_url.as_str()) {
 			Ok(response) => response,
 			Err(e) => {
-				if let ureq::Error::Status(405, _) = e {
-					match ureq::post(endpoint_url.as_str()).call() {
+				if e.is_status() && e.status().unwrap().as_u16() == 405 {
+					match reqwest::blocking::Client::new().post(endpoint_url.as_str()).send() {
 						Ok(response) => response,
 						Err(e) => {
 							log::error!("{:?}", e);
@@ -121,7 +119,7 @@ impl Beacon {
 			},
 		};
 
-		let response_json = match response.into_json::<Json>() {
+		let response_json: Json = match response.json() {
 			Ok(response_json) => response_json,
 			Err(e) => {
 				log::error!("{:?}", e);

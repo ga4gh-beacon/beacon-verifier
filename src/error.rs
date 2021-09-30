@@ -3,7 +3,7 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum VerifierError {
 	#[error("Request error {0}")]
-	RequestError(#[from] Box<ureq::Error>),
+	RequestError(#[from] reqwest::Error),
 
 	#[error("IO Error")]
 	IoError(#[from] std::io::Error),

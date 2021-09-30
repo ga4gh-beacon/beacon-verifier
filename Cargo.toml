@@ -26,7 +26,7 @@ git2 = "0.13"
 jsonschema = { version = "0.12.1", features = ["reqwest"] }
 url = { version = "2.2.2", features = ["serde"] }
 regex = "1.5.4"
-ureq = { version = "2.1.1", features = ["json", "charset"] }
+reqwest = { version = "0.11", features = ["blocking", "json"] }
 
 # Output
 serde = { version = "1.0", features = ["derive"] }

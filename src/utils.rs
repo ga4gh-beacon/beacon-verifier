@@ -57,21 +57,21 @@ pub fn copy_dir_recursively<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> R
 
 pub fn ping_url(endpoint_url: &Url) -> Result<Json, VerifierError> {
 	// Query endpoint
-	let response = match ureq::get(endpoint_url.as_str()).call() {
+	let response = match reqwest::blocking::get(endpoint_url.as_str()) {
 		Ok(response) => response,
 		Err(e) => {
-			return if e.kind() == ureq::ErrorKind::HTTP {
+			return if e.is_status() {
 				log::error!("{:?}", e);
 				Err(error::VerifierError::BadStatus)
 			}
 			else {
 				log::error!("{:?}", e);
-				Err(error::VerifierError::RequestError(Box::new(e)))
+				Err(error::VerifierError::RequestError(e))
 			};
 		},
 	};
 
-	let response_json = match response.into_json::<Json>() {
+	let response_json = match response.json() {
 		Ok(response_json) => response_json,
 		Err(e) => {
 			log::error!("{:?}", e);
@@ -102,9 +102,9 @@ pub fn replace_vars(url: &Url, vars: Vec<(&str, &str)>) -> Url {
 
 pub fn get_filtering_terms(url: &Url) -> Vec<FilteringTerm> {
 	// Query endpoint
-	match ureq::get(url.as_str()).call() {
+	match reqwest::blocking::get(url.as_str()) {
 		Ok(response) => {
-			let j = response.into_json::<Json>().unwrap();
+			let j = response.json().unwrap();
 			serde_json::from_value(j).unwrap()
 		},
 		Err(_) => Vec::new(),
@@ -122,6 +122,7 @@ pub fn get_ids(report: &EndpointReport) -> Option<String> {
 
 #[cfg(test)]
 mod tests {
+
 	use url::Url;
 
 	use crate::utils::replace_vars;
