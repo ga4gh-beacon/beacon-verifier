@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 use url::Url;
@@ -15,13 +15,13 @@ pub struct EndpointOutput {
 }
 
 pub struct Output {
-	results: HashMap<String, Vec<EndpointOutput>>,
+	results: BTreeMap<String, Vec<EndpointOutput>>,
 }
 
 impl Output {
 	pub fn new() -> Self {
 		Self {
-			results: HashMap::new(),
+			results: BTreeMap::new(),
 		}
 	}
 
@@ -49,9 +49,15 @@ impl Output {
 		}
 	}
 
-	pub fn finish(self) -> HashMap<String, Vec<EndpointOutput>> {
+	pub fn finish(self) -> BTreeMap<String, Vec<EndpointOutput>> {
 		log::debug!("Compiling results...");
 		self.results
+			.into_iter()
+			.map(|(entity_name, mut output)| {
+				output.sort_by_key(|k| k.name.clone());
+				(entity_name, output)
+			})
+			.collect()
 	}
 }
 

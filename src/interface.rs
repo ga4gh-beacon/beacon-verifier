@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap, HashMap};
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
@@ -10,7 +10,7 @@ use crate::output::EndpointOutput;
 pub struct BeaconOutput {
 	pub name: String,
 	pub url: Url,
-	pub entities: HashMap<String, Vec<EndpointOutput>>,
+	pub entities: BTreeMap<String, Vec<EndpointOutput>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

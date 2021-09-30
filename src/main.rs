@@ -1,6 +1,6 @@
 #![allow(clippy::module_name_repetitions, clippy::unused_self, clippy::missing_const_for_fn)]
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use clap::{crate_authors, crate_version, load_yaml, App, AppSettings};
 use url::Url;
@@ -67,7 +67,7 @@ fn main() {
 					Err(e) => BeaconOutput {
 						name: format!("Unknown Beacon ({})", e),
 						url: beacon_url,
-						entities: HashMap::new(),
+						entities: BTreeMap::new(),
 					},
 				}
 			})

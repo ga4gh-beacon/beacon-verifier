@@ -20,9 +20,7 @@ impl Beacon {
 	pub fn new(spec: Spec, framework: Framework, url: &Url) -> Result<Self, VerifierError> {
 		let mut info_url = url.clone();
 		info_url.set_path(Path::new(url.path()).join("info").to_str().unwrap_or(""));
-		let info: Json = reqwest::blocking::get(&info_url.to_string())?
-			.json()
-			.unwrap();
+		let info: Json = reqwest::blocking::get(&info_url.to_string())?.json().unwrap();
 		log::trace!("{}", info);
 
 		Ok(Self {
@@ -293,8 +291,11 @@ impl Beacon {
 						entity.name.clone(),
 						report_ids
 							.name(&format!(
-								"{} related with a single entry of {}",
-								related_enpoint.returned_entry_type,
+								"{} related with a {}",
+								self.spec
+									.entities_names
+									.get(&related_enpoint.returned_entry_type)
+									.unwrap_or(&String::from("Unknown entity")),
 								entity.name.clone()
 							))
 							.url(replaced_url_related.clone()),

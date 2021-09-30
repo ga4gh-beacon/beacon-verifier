@@ -24,6 +24,7 @@ pub struct Entity {
 #[derive(Debug, Clone)]
 pub struct Spec {
 	pub entities: Vec<Entity>,
+	pub entities_names: HashMap<String, String>,
 	pub configuration_json: Json,
 	pub beacon_map_json: Json,
 	pub endpoints_json: Json,
@@ -64,6 +65,7 @@ impl Spec {
 
 		let mut spec = Self {
 			entities: Vec::new(),
+			entities_names: HashMap::new(),
 			configuration_json: Json::Null,
 			beacon_map_json: Json::Null,
 			endpoints_json: Json::Null,
@@ -113,12 +115,15 @@ impl Spec {
 	}
 
 	fn load_entities(&mut self, base_path: &Path) {
+		let mut entities_names = HashMap::new();
+
 		let entities_schemas = self.configuration_json["entryTypes"]
 			.as_object()
 			.unwrap()
 			.into_iter()
 			.map(|(_, val)| {
 				let entry_type: EntryType = serde_json::from_value(val.clone()).unwrap();
+				entities_names.insert(entry_type.id.clone(), entry_type.name);
 				let mut schema_rel_path = entry_type.default_schema.reference_to_schema_definition;
 				if schema_rel_path.starts_with("http") {
 					let schema_rel_path_url = Url::parse(&schema_rel_path).unwrap();
@@ -138,6 +143,8 @@ impl Spec {
 			})
 			.collect::<HashMap<String, Json>>();
 
+		self.entities_names = entities_names;
+
 		for (_, entity) in self.beacon_map_json["endpointSets"].as_object().unwrap() {
 			let endpoint: Endpoint = serde_json::from_value(entity.clone()).unwrap();
 			let entity_schema = entities_schemas
@@ -153,7 +160,11 @@ impl Spec {
 				.clone();
 			self.entities.push(Entity {
 				schema: entity_schema,
-				name: endpoint.entry_type,
+				name: self
+					.entities_names
+					.get(&endpoint.entry_type)
+					.unwrap_or(&String::from("Unknown entity name"))
+					.clone(),
 				url: endpoint.root_url,
 				url_single: endpoint.single_entry_url,
 				filtering_terms_url: endpoint.filtering_terms_url,
