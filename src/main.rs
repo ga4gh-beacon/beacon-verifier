@@ -3,7 +3,6 @@
 use std::collections::BTreeMap;
 
 use clap::{crate_authors, crate_version, load_yaml, App, AppSettings};
-use url::Url;
 
 use crate::beacon::Beacon;
 use crate::framework::Framework;
@@ -55,24 +54,18 @@ fn main() {
 
 	// Validate beacons
 	if !matches.is_present("only-spec") {
-		// Load beacons
-		let output: Vec<BeaconOutput> = matches
-			.values_of_t::<Url>("URLS")
-			.unwrap()
-			.into_iter()
-			.map(|beacon_url| {
-				log::info!("Validating implementation on {}", beacon_url);
-				match Beacon::new(spec.clone(), framework.clone(), &beacon_url) {
-					Ok(beacon) => beacon.validate(),
-					Err(e) => BeaconOutput {
-						name: format!("Unknown Beacon ({})", e),
-						url: beacon_url,
-						last_updated: chrono::offset::Utc::now().naive_utc(),
-						entities: BTreeMap::new(),
-					},
-				}
-			})
-			.collect();
+		// Load beacon
+		let beacon_url = matches.value_of_t("URL").expect("Invalid argument");
+		log::info!("Validating implementation on {}", beacon_url);
+		let output = match Beacon::new(spec, framework, &beacon_url) {
+			Ok(beacon) => beacon.validate(),
+			Err(e) => BeaconOutput {
+				name: format!("Unknown Beacon ({})", e),
+				url: beacon_url,
+				last_updated: chrono::offset::Utc::now().naive_utc(),
+				entities: BTreeMap::new(),
+			},
+		};
 
 		let payload = serde_json::to_string_pretty(&output).unwrap();
 		println!("{}", payload);

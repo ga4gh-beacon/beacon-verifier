@@ -1,5 +1,5 @@
-name: jsc-val
-about: Utility to validate beacon implementations agains examples.
+name: beacon-verifier
+about: Utility to validate beacon implementations agains the beacon model and framework.
 args:
     - verbose:
         required: false
@@ -26,8 +26,8 @@ args:
         about: Beacon Framework
         takes_value: true
         default_value: https://github.com/ga4gh-beacon/beacon-framework-v2
-    - URLS:
+    - URL:
         required: true
-        about: Urls to the Beacon implementations
+        about: Url to the Beacon implementation
         takes_value: true
-        multiple_values: true
+        multiple_values: false
