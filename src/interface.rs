@@ -4,15 +4,6 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use crate::output::EndpointOutput;
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BeaconOutput {
-	pub name: String,
-	pub url: Url,
-	pub entities: BTreeMap<String, Vec<EndpointOutput>>,
-}
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Endpoint {

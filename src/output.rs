@@ -7,6 +7,13 @@ use crate::error::VerifierError;
 use crate::Json;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BeaconOutput {
+	pub name: String,
+	pub url: Url,
+	pub entities: BTreeMap<String, Vec<EndpointOutput>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EndpointOutput {
 	pub name: String,
 	pub url: Url,

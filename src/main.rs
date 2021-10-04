@@ -7,7 +7,7 @@ use url::Url;
 
 use crate::beacon::Beacon;
 use crate::framework::Framework;
-use crate::interface::BeaconOutput;
+use crate::output::BeaconOutput;
 use crate::spec::Spec;
 
 mod beacon;
