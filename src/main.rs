@@ -2,6 +2,7 @@
 
 use std::collections::BTreeMap;
 
+use chrono::SubsecRound;
 use clap::{crate_authors, crate_version, load_yaml, App, AppSettings};
 
 use crate::beacon::Beacon;
@@ -62,7 +63,7 @@ fn main() {
 			Err(e) => BeaconOutput {
 				name: format!("Unknown Beacon ({})", e),
 				url: beacon_url,
-				last_updated: chrono::offset::Utc::now().naive_utc(),
+				last_updated: chrono::offset::Utc::now().naive_utc().round_subsecs(6),
 				entities: BTreeMap::new(),
 			},
 		};

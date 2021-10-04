@@ -1,5 +1,6 @@
 use std::path::Path;
 
+use chrono::SubsecRound;
 use url::Url;
 
 use crate::error::VerifierError;
@@ -306,7 +307,7 @@ impl Beacon {
 		BeaconOutput {
 			name: self.name,
 			url: self.url,
-			last_updated: chrono::offset::Utc::now().naive_utc(),
+			last_updated: chrono::offset::Utc::now().naive_utc().round_subsecs(6),
 			entities: output.finish(),
 		}
 	}
