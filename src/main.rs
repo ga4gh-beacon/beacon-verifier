@@ -67,6 +67,7 @@ fn main() {
 					Err(e) => BeaconOutput {
 						name: format!("Unknown Beacon ({})", e),
 						url: beacon_url,
+						last_updated: chrono::offset::Utc::now().naive_utc(),
 						entities: BTreeMap::new(),
 					},
 				}

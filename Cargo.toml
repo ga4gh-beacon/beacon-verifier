@@ -29,6 +29,7 @@ reqwest = { version = "0.11", features = ["blocking", "json"] }
 # Output
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
 
 # Log
 log = "0.4.0"

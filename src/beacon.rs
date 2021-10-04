@@ -306,6 +306,7 @@ impl Beacon {
 		BeaconOutput {
 			name: self.name,
 			url: self.url,
+			last_updated: chrono::offset::Utc::now().naive_utc(),
 			entities: output.finish(),
 		}
 	}
