@@ -4,8 +4,7 @@ use url::Url;
 
 use crate::error::VerifierError;
 use crate::framework::Framework;
-use crate::output::BeaconOutput;
-use crate::output::{EndpointReport, Output};
+use crate::output::{BeaconOutput, EndpointReport, Output};
 use crate::spec::{Entity, Spec};
 use crate::{utils, Json};
 
