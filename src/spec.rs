@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{BTreeMap};
 use std::ffi::OsStr;
 use std::fs::File;
 use std::path::{Path, PathBuf};
@@ -18,17 +18,17 @@ pub struct Entity {
 	pub url_single: Option<Url>,
 	pub schema: Json,
 	pub filtering_terms_url: Option<Url>,
-	pub related_endpoints: Option<HashMap<String, RelatedEndpoint>>,
+	pub related_endpoints: Option<BTreeMap<String, RelatedEndpoint>>,
 }
 
 #[derive(Debug, Clone)]
 pub struct Spec {
 	pub entities: Vec<Entity>,
-	pub entities_names: HashMap<String, String>,
+	pub entities_names: BTreeMap<String, String>,
 	pub configuration_json: Json,
 	pub beacon_map_json: Json,
 	pub endpoints_json: Json,
-	files: HashMap<PathBuf, Json>,
+	files: BTreeMap<PathBuf, Json>,
 }
 
 impl Spec {
@@ -65,11 +65,11 @@ impl Spec {
 
 		let mut spec = Self {
 			entities: Vec::new(),
-			entities_names: HashMap::new(),
+			entities_names: BTreeMap::new(),
 			configuration_json: Json::Null,
 			beacon_map_json: Json::Null,
 			endpoints_json: Json::Null,
-			files: HashMap::new(),
+			files: BTreeMap::new(),
 		};
 
 		// Load files
@@ -115,7 +115,7 @@ impl Spec {
 	}
 
 	fn load_entities(&mut self, base_path: &Path) {
-		let mut entities_names = HashMap::new();
+		let mut entities_names = BTreeMap::new();
 
 		let entities_schemas = self.configuration_json["entryTypes"]
 			.as_object()
@@ -141,7 +141,7 @@ impl Spec {
 				let schema_json = serde_json::from_reader(schema_file).expect("Bad json schema");
 				(entry_type.id, schema_json)
 			})
-			.collect::<HashMap<String, Json>>();
+			.collect::<BTreeMap<String, Json>>();
 
 		self.entities_names = entities_names;
 

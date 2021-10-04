@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap};
 use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
@@ -12,7 +12,7 @@ pub struct Endpoint {
 	pub root_url: Url,
 	pub single_entry_url: Option<Url>,
 	pub filtering_terms_url: Option<Url>,
-	pub endpoints: Option<HashMap<String, RelatedEndpoint>>,
+	pub endpoints: Option<BTreeMap<String, RelatedEndpoint>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::path::{Path, PathBuf};
@@ -14,7 +14,7 @@ pub struct Framework {
 	pub configuration_json: Json,
 	pub beacon_map_json: Json,
 	pub entry_types_json: Json,
-	files: HashMap<PathBuf, Json>,
+	files: BTreeMap<PathBuf, Json>,
 }
 
 impl Framework {
@@ -53,7 +53,7 @@ impl Framework {
 			configuration_json: Json::Null,
 			beacon_map_json: Json::Null,
 			entry_types_json: Json::Null,
-			files: HashMap::new(),
+			files: BTreeMap::new(),
 		};
 
 		// Load files
