@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use chrono::SubsecRound;
+use jsonschema::JSONSchema;
 use url::Url;
 
 use crate::error::VerifierError;
@@ -62,69 +63,55 @@ impl Beacon {
 		name
 	}
 
-	fn valid_schema(&self, schema: &Json, instance: &Json) -> EndpointReport {
-		let json_schema = match jsonschema::JSONSchema::options().with_meta_schemas().compile(schema) {
+	fn valid_schema(&self, json_schema: &JSONSchema, instance: &Json) -> Result<Json, VerifierError> {
+		match json_schema.validate(instance) {
+			Ok(_) => {
+				log::info!("VALID");
+				Ok(instance.clone())
+			},
+			Err(errors) => {
+				log::error!("NOT VALID:");
+				let mut er = String::new();
+				errors.into_iter().for_each(|e| {
+					log::error!(
+						"   ERROR: {:?} - {} ({})",
+						e.kind,
+						e.to_string(),
+						e.instance_path.to_string(),
+					);
+					er.push_str(&e.to_string());
+					er.push('\n');
+				});
+				Err(VerifierError::BadResponse(er))
+			},
+		}
+	}
+
+	fn valid_endpoint(&self, entity: &Entity, endpoint_url: &Url) -> EndpointReport {
+		// Get response
+		let response_json = match utils::ping_url(endpoint_url) {
+			Ok(j) => j,
+			Err(e) => {
+				return EndpointReport::new().null(e);
+			},
+		};
+
+		// Comply against framework
+		let response_schema = match jsonschema::JSONSchema::options()
+			.with_meta_schemas()
+			.compile(&self.framework.result_sets_json)
+		{
 			Ok(schema) => schema,
 			Err(e) => {
 				log::error!("{:?}", e);
 				return EndpointReport::new().null(VerifierError::BadSchema);
 			},
 		};
-
-		let report = match json_schema.validate(instance) {
-			Ok(_) => {
-				log::info!("VALID");
-				EndpointReport::new().ok(Some(instance.clone()))
-			},
-			Err(errors) => {
-				log::error!("NOT VALID:");
-				let mut er = String::new();
-				for e in errors {
-					log::error!(
-						"   ERROR: {} on property path {}",
-						e.to_string(),
-						e.instance_path.to_string(),
-					);
-					er.push_str(&e.to_string());
-					er.push('\n');
-				}
-				EndpointReport::new().error(VerifierError::BadResponse(er))
-			},
+		if let Err(e) = self.valid_schema(&response_schema, &response_json) {
+			return EndpointReport::new().error(e);
 		};
 
-		report
-	}
-
-	fn valid_endpoint(&self, entity: &Entity, endpoint_url: &Url) -> EndpointReport {
-		// Query endpoint
-		let response = match reqwest::blocking::get(endpoint_url.as_str()) {
-			Ok(response) => response,
-			Err(e) => {
-				if e.is_status() && e.status().unwrap().as_u16() == 405 {
-					match reqwest::blocking::Client::new().post(endpoint_url.as_str()).send() {
-						Ok(response) => response,
-						Err(e) => {
-							log::error!("{:?}", e);
-							return EndpointReport::new()
-								.null(VerifierError::UnresponsiveEndpoint(endpoint_url.clone()));
-						},
-					}
-				}
-				else {
-					log::error!("{:?}", e);
-					return EndpointReport::new().null(VerifierError::UnresponsiveEndpoint(endpoint_url.clone()));
-				}
-			},
-		};
-
-		let response_json: Json = match response.json() {
-			Ok(response_json) => response_json,
-			Err(e) => {
-				log::error!("{:?}", e);
-				return EndpointReport::new().error(VerifierError::ResponseIsNotJson);
-			},
-		};
-
+		// Compile entity schema
 		let schema = match jsonschema::JSONSchema::options()
 			.with_meta_schemas()
 			.compile(&entity.schema)
@@ -136,49 +123,46 @@ impl Beacon {
 			},
 		};
 
-		log::debug!("Validating...");
-		let resp = if let Some(r) = response_json["resultSets"].as_object() {
-			r
-		}
-		else {
-			log::error!("No resultSets in response");
-			return EndpointReport::new().error(VerifierError::NoResultSets);
-		};
-
-		if resp["exists"] == "false" {
+		// Case: == 0 results
+		if response_json
+			.as_object()
+			.unwrap()
+			.get("responseSummary")
+			.unwrap()
+			.as_object()
+			.unwrap()
+			.get("exists")
+			.unwrap()
+			.as_str()
+			.unwrap() == "false"
+		{
 			return EndpointReport::new().ok(None);
 		}
 
-		resp["results"]
+		// Case: >= 1 results
+		log::info!("Verifying results...");
+		response_json
+			.as_object()
+			.unwrap()
+			.get("response")
+			.unwrap()
+			.as_object()
+			.unwrap()
+			.get("resultSets")
+			.unwrap()
+			.as_object()
+			.unwrap()
+			.get("results")
+			.unwrap()
 			.as_array()
 			.unwrap()
 			.iter()
-			.map(|result| match schema.validate(result) {
-				Ok(_) => {
-					log::info!("VALID");
-					EndpointReport::new().ok(Some(result.clone()))
+			.map(
+				|instance| match self.valid_schema(&schema, &instance.clone()) {
+					Ok(output) => EndpointReport::new().ok(Some(output)),
+					Err(e) => EndpointReport::new().error(e),
 				},
-				Err(errors) => {
-					log::error!("NOT VALID:");
-					let errors_string = errors
-						.into_iter()
-						.map(|e| {
-							log::error!(
-								"   ERROR: {} on property path {}",
-								e.to_string(),
-								e.instance_path.to_string(),
-							);
-							format!(
-								"ERROR: {} on property path {}",
-								e.to_string(),
-								e.instance_path.to_string(),
-							)
-						})
-						.collect::<Vec<String>>()
-						.join("\n");
-					EndpointReport::new().error(VerifierError::BadResponse(errors_string))
-				},
-			})
+			)
 			.fold(EndpointReport::new().ok(None), EndpointReport::join)
 	}
 
@@ -186,7 +170,19 @@ impl Beacon {
 		let mut url = self.url.clone();
 		url.set_path(Path::new(self.url.path()).join(&location).to_str().unwrap_or(""));
 		let report = match utils::ping_url(&url) {
-			Ok(beacon_map_json) => self.valid_schema(schema, &beacon_map_json),
+			Ok(beacon_map_json) => {
+				let json_schema = match jsonschema::JSONSchema::options().with_meta_schemas().compile(schema) {
+					Ok(schema) => schema,
+					Err(e) => {
+						log::error!("{:?}", e);
+						return EndpointReport::new().null(VerifierError::BadSchema);
+					},
+				};
+				match self.valid_schema(&json_schema, &beacon_map_json) {
+					Ok(output) => EndpointReport::new().ok(Some(output)),
+					Err(e) => EndpointReport::new().error(e),
+				}
+			},
 			Err(e) => {
 				log::error!("{}", e);
 				EndpointReport::new().null(e)
