@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use chrono::{NaiveDateTime};
+use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
