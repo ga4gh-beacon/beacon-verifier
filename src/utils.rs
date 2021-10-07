@@ -57,8 +57,22 @@ pub fn copy_dir_recursively<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> R
 
 pub fn ping_url(endpoint_url: &Url) -> Result<Json, VerifierError> {
 	// Query endpoint
-	let response = match reqwest::blocking::get(endpoint_url.as_str()) {
-		Ok(response) => response,
+	let client = reqwest::blocking::Client::new();
+
+	let response = match client.get(endpoint_url.as_str()).send() {
+		Ok(response) if response.status().is_success() => response,
+		Ok(response) => {
+			if response.status().as_u16() == 405 {
+				match client.post(endpoint_url.as_str()).send() {
+					Ok(response) if response.status().is_success() => response,
+					Ok(_) => return Err(VerifierError::UnresponsiveEndpoint(endpoint_url.clone())),
+					Err(e) => return Err(VerifierError::RequestError(e)),
+				}
+			}
+			else {
+				return Err(VerifierError::UnresponsiveEndpoint(endpoint_url.clone()));
+			}
+		},
 		Err(e) => {
 			return if e.is_status() {
 				log::error!("{:?}", e);
@@ -75,7 +89,7 @@ pub fn ping_url(endpoint_url: &Url) -> Result<Json, VerifierError> {
 		Ok(response_json) => response_json,
 		Err(e) => {
 			log::error!("{:?}", e);
-			return Err(VerifierError::BadJson);
+			return Err(VerifierError::ResponseIsNotJson);
 		},
 	};
 
