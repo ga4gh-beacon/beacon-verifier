@@ -157,12 +157,10 @@ impl Beacon {
 			.as_array()
 			.unwrap()
 			.iter()
-			.map(
-				|instance| match self.valid_schema(&schema, &instance.clone()) {
-					Ok(output) => EndpointReport::new().ok(Some(output)),
-					Err(e) => EndpointReport::new().error(e),
-				},
-			)
+			.map(|instance| match self.valid_schema(&schema, &instance.clone()) {
+				Ok(output) => EndpointReport::new().ok(Some(output)),
+				Err(e) => EndpointReport::new().error(e),
+			})
 			.fold(EndpointReport::new().ok(None), EndpointReport::join)
 	}
 
