@@ -23,9 +23,6 @@ pub enum VerifierError {
 	#[error("Unable to compile the schema (use the --spec option)")]
 	BadSchema,
 
-	#[error("No resultsSets property in the response")]
-	NoResultSets,
-
 	#[error("Bad framework (use the --framework option)")]
 	BadFramework,
 
