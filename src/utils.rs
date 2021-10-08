@@ -59,11 +59,11 @@ pub fn ping_url(endpoint_url: &Url) -> Result<Json, VerifierError> {
 	// Query endpoint
 	let client = reqwest::blocking::Client::new();
 
-	let response = match client.get(endpoint_url.as_str()).send() {
+	let response = match client.get(endpoint_url.clone()).send() {
 		Ok(response) if response.status().is_success() => response,
 		Ok(response) => {
 			if response.status().as_u16() == 405 {
-				match client.post(endpoint_url.as_str()).send() {
+				match client.post(endpoint_url.clone()).send() {
 					Ok(response) if response.status().is_success() => response,
 					Ok(_) => return Err(VerifierError::UnresponsiveEndpoint(endpoint_url.clone())),
 					Err(e) => return Err(VerifierError::RequestError(e)),
