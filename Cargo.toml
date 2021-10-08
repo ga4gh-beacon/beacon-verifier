@@ -1,6 +1,6 @@
 [package]
 name = "beacon-verifier"
-version = "0.2.4"
+version = "0.2.5"
 authors = ["Mr.Robb <roberto.ariosa@crg.eu>"]
 edition = "2018"
 license = "Apache-2.0"
