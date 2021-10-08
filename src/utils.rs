@@ -134,20 +134,6 @@ pub fn get_ids(report: &EndpointReport) -> Option<String> {
 	output["id"].as_str().map(std::string::ToString::to_string)
 }
 
-pub fn remove_nulls(j: Json) -> Json {
-	match j {
-		Json::Null => unreachable!(),
-		Json::Array(a) => Json::Array(a.into_iter().filter(|v| !v.is_null()).map(remove_nulls).collect()),
-		Json::Object(o) => Json::Object(
-			o.into_iter()
-				.filter(|(_, v)| !v.is_null())
-				.map(|(k, v)| (k, remove_nulls(v)))
-				.collect(),
-		),
-		j => j,
-	}
-}
-
 #[cfg(test)]
 mod tests {
 
