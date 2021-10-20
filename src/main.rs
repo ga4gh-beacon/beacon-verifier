@@ -26,9 +26,8 @@ fn main() {
 	let matches = App::from(yaml)
 		.version(crate_version!())
 		.author(crate_authors!())
+		.color(clap::ColorChoice::Always)
 		.global_setting(AppSettings::ArgRequiredElseHelp)
-		.global_setting(AppSettings::ColorAlways)
-		.global_setting(AppSettings::ColoredHelp)
 		.get_matches();
 
 	// Verbose
