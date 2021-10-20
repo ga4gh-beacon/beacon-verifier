@@ -1,33 +1,33 @@
 name: beacon-verifier
-about: Utility to validate beacon implementations agains the beacon model and framework.
+help: Utility to validate beacon implementations agains the beacon model and framework.
 args:
     - verbose:
         required: false
         short: v
         long: verbose
-        about: Sets the level of verbosity
+        help: Sets the level of verbosity
         takes_value: false
     - only-spec:
         required: false
         long: only-spec
-        about: Only validate the spec referenced
+        help: Only validate the spec referenced
         takes_value: false
     - spec:
         required: false
         short: s
         long: spec
-        about: Location of the spec
+        help: Location of the spec
         takes_value: true
         default_value: https://github.com/MrRobb/beacon-v2-Models/BEACON-V2-draft4-Model
     - framework:
         required: false
         short: f
         long: framework
-        about: Beacon Framework
+        help: Beacon Framework
         takes_value: true
         default_value: https://github.com/MrRobb/beacon-framework-v2/
     - URL:
         required: true
-        about: Url to the Beacon implementation
+        help: Url to the Beacon implementation
         takes_value: true
-        multiple_values: false
+        multiple: false

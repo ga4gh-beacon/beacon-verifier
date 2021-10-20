@@ -6,6 +6,7 @@ use chrono::SubsecRound;
 use clap::{crate_authors, crate_version, load_yaml, App, AppSettings};
 
 use crate::beacon::Beacon;
+use crate::error::VerifierError;
 use crate::framework::Framework;
 use crate::output::BeaconOutput;
 use crate::spec::Spec;
@@ -20,14 +21,15 @@ mod utils;
 
 pub type Json = serde_json::Value;
 
-fn main() {
+fn main() -> Result<(), VerifierError> {
 	// Get args
 	let yaml = load_yaml!("../cli.yaml");
 	let matches = App::from(yaml)
 		.version(crate_version!())
 		.author(crate_authors!())
-		.color(clap::ColorChoice::Always)
 		.global_setting(AppSettings::ArgRequiredElseHelp)
+		.global_setting(AppSettings::ColorAlways)
+		.global_setting(AppSettings::ColoredHelp)
 		.get_matches();
 
 	// Verbose
@@ -40,13 +42,19 @@ fn main() {
 	pretty_env_logger::init();
 
 	// Load framework
-	let framework_location = matches.value_of_t("framework").unwrap();
+	let framework_location = url::Url::parse(
+		matches
+			.value_of("framework")
+			.expect("No --framework passed as argument"),
+	)
+	.map_err(|_| VerifierError::ArgNotURL("--framework"))?;
 	log::debug!("Loading framework from: {}", &framework_location);
 	let framework = Framework::load(&framework_location).expect("Loading framework failed");
 	log::debug!("Framework loaded");
 
 	// Load spec
-	let spec_location = matches.value_of_t("spec").unwrap();
+	let spec_location = url::Url::parse(matches.value_of("spec").expect("No --spec passed as argument"))
+		.map_err(|_| VerifierError::ArgNotURL("--spec"))?;
 	log::debug!("Loading spec from: {}", spec_location);
 	let spec = Spec::load(&spec_location).expect("Loading spec failed");
 	let n_entitites = spec.validate(&framework);
@@ -55,7 +63,8 @@ fn main() {
 	// Validate beacons
 	if !matches.is_present("only-spec") {
 		// Load beacon
-		let beacon_url = matches.value_of_t("URL").expect("Invalid argument");
+		let beacon_url =
+			url::Url::parse(matches.value_of("URL").expect("No URL")).map_err(|_| VerifierError::ArgNotURL("URL"))?;
 		log::info!("Validating implementation on {}", beacon_url);
 		let output = match Beacon::new(spec, framework, &beacon_url) {
 			Ok(beacon) => beacon.validate(),
@@ -70,4 +79,6 @@ fn main() {
 		let payload = serde_json::to_string_pretty(&output).unwrap();
 		println!("{}", payload);
 	}
+
+	Ok(())
 }
