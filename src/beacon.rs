@@ -126,15 +126,15 @@ impl Beacon {
 		// Case: == 0 results
 		if !response_json
 			.as_object()
-			.unwrap()
+			.expect("JSON is not an object")
 			.get("responseSummary")
-			.unwrap()
+			.expect("No 'responseSummary' property was found")
 			.as_object()
-			.unwrap()
+			.expect("'responseSummary' is not an object")
 			.get("exists")
-			.unwrap()
+			.expect("No 'exists' property found")
 			.as_bool()
-			.unwrap()
+			.expect("'exists' property is not a bool")
 		{
 			return EndpointReport::new().ok(None);
 		}
@@ -143,20 +143,24 @@ impl Beacon {
 		log::info!("Verifying results...");
 		response_json
 			.as_object()
-			.unwrap()
+			.expect("JSON is not an object")
 			.get("response")
-			.unwrap()
+			.expect("No 'response' property was found")
 			.as_object()
-			.unwrap()
+			.expect("'response' is not an object")
 			.get("resultSets")
-			.unwrap()
+			.expect("No 'resultSets' property was found")
 			.as_array()
-			.unwrap()
+			.expect("'resultSets' property is not an array")
 			.iter()
 			.map(|rs| {
-				rs.get("results").unwrap()
+				rs
+				.as_object()
+				.expect("resultSet inside 'resultSets' property is not an object")
+				.get("results")
+				.expect("No 'results' property was found")
 				.as_array()
-				.unwrap()
+				.expect("'results' property is not an array")
 				.iter()
 				.map(|instance| match self.valid_schema(&schema, &instance.clone()) {
 					Ok(output) => EndpointReport::new().ok(Some(output)),
