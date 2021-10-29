@@ -150,16 +150,19 @@ impl Beacon {
 			.unwrap()
 			.get("resultSets")
 			.unwrap()
-			.as_object()
-			.unwrap()
-			.get("results")
-			.unwrap()
 			.as_array()
 			.unwrap()
 			.iter()
-			.map(|instance| match self.valid_schema(&schema, &instance.clone()) {
-				Ok(output) => EndpointReport::new().ok(Some(output)),
-				Err(e) => EndpointReport::new().error(e),
+			.map(|rs| {
+				rs.get("results").unwrap()
+				.as_array()
+				.unwrap()
+				.iter()
+				.map(|instance| match self.valid_schema(&schema, &instance.clone()) {
+					Ok(output) => EndpointReport::new().ok(Some(output)),
+					Err(e) => EndpointReport::new().error(e),
+				})
+				.fold(EndpointReport::new().ok(None), EndpointReport::join)
 			})
 			.fold(EndpointReport::new().ok(None), EndpointReport::join)
 	}
