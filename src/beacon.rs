@@ -124,7 +124,7 @@ impl Beacon {
 		};
 
 		// Case: == 0 results
-		if response_json
+		if !response_json
 			.as_object()
 			.unwrap()
 			.get("responseSummary")
@@ -133,8 +133,8 @@ impl Beacon {
 			.unwrap()
 			.get("exists")
 			.unwrap()
-			.as_str()
-			.unwrap() == "false"
+			.as_bool()
+			.unwrap()
 		{
 			return EndpointReport::new().ok(None);
 		}
