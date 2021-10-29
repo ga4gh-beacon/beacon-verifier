@@ -5,6 +5,7 @@
 ## Installation
 
 > Requirements: [Rust](https://www.rust-lang.org/tools/install)
+> **Minimum Rust version**: `1.56`
 
 ```sh
 cargo install beacon-verifier

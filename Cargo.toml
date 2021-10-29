@@ -2,13 +2,14 @@
 name = "beacon-verifier"
 version = "0.2.6"
 authors = ["Mr.Robb <roberto.ariosa@crg.eu>"]
-edition = "2018"
+edition = "2021"
 license = "Apache-2.0"
 description = "Compliance tool to verify beacon implementations."
 repository = "https://github.com/ga4gh-beacon/beacon-verifier"
 keywords = ["genetics", "http", "api", "jsonschema", "validation"]
 categories = ["development-tools::testing"]
 readme = "README.md"
+rust-version = "1.56"
 
 [dependencies]
 
