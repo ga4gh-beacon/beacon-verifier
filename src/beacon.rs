@@ -154,19 +154,18 @@ impl Beacon {
 			.expect("'resultSets' property is not an array")
 			.iter()
 			.map(|rs| {
-				rs
-				.as_object()
-				.expect("resultSet inside 'resultSets' property is not an object")
-				.get("results")
-				.expect("No 'results' property was found")
-				.as_array()
-				.expect("'results' property is not an array")
-				.iter()
-				.map(|instance| match self.valid_schema(&schema, &instance.clone()) {
-					Ok(output) => EndpointReport::new().ok(Some(output)),
-					Err(e) => EndpointReport::new().error(e),
-				})
-				.fold(EndpointReport::new().ok(None), EndpointReport::join)
+				rs.as_object()
+					.expect("resultSet inside 'resultSets' property is not an object")
+					.get("results")
+					.expect("No 'results' property was found")
+					.as_array()
+					.expect("'results' property is not an array")
+					.iter()
+					.map(|instance| match self.valid_schema(&schema, &instance.clone()) {
+						Ok(output) => EndpointReport::new().ok(Some(output)),
+						Err(e) => EndpointReport::new().error(e),
+					})
+					.fold(EndpointReport::new().ok(None), EndpointReport::join)
 			})
 			.fold(EndpointReport::new().ok(None), EndpointReport::join)
 	}
