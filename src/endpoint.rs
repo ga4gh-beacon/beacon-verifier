@@ -126,7 +126,9 @@ impl BeaconEndpoint {
 					.iter()
 					.map(
 						|instance| match utils::valid_schema(&self.entity_schema.clone(), &instance.clone()) {
-							Ok(output) => EndpointReport::new(&self.entity_name, &self.name, self.url.clone()).ok(Some(output)),
+							Ok(output) => {
+								EndpointReport::new(&self.entity_name, &self.name, self.url.clone()).ok(Some(output))
+							},
 							Err(e) => EndpointReport::new(&self.entity_name, &self.name, self.url.clone()).error(e),
 						},
 					)

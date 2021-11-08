@@ -71,7 +71,8 @@ impl Beacon {
 					Ok(schema) => schema,
 					Err(e) => {
 						log::error!("{:?}", e);
-						return EndpointReport::new(entity_name, &self.name, self.url.clone()).null(VerifierError::BadSchema);
+						return EndpointReport::new(entity_name, &self.name, self.url.clone())
+							.null(VerifierError::BadSchema);
 					},
 				};
 				match utils::valid_schema(&json_schema, &beacon_map_json) {
@@ -91,7 +92,8 @@ impl Beacon {
 		let mut output = Output::new();
 
 		// Validate configuration
-		let report = self.validate_against_framework("Configuration", "configuration", &self.framework.configuration_json);
+		let report =
+			self.validate_against_framework("Configuration", "configuration", &self.framework.configuration_json);
 		output.push(report);
 
 		// Validate beacon map
