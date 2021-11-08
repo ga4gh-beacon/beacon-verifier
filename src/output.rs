@@ -80,8 +80,8 @@ pub struct EndpointReport {
 }
 
 impl EndpointReport {
-	pub fn new() -> Self {
-		Self::default()
+	pub fn new(name: &str, url: Url) -> Self {
+		Self::default().name(name).url(url)
 	}
 
 	pub fn null(mut self, e: VerifierError) -> Self {

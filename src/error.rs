@@ -34,9 +34,9 @@ pub enum VerifierError {
 	#[error("Unexpected HTTP status code")]
 	BadStatus,
 
-	#[error("No ids were extracted from the main entity endpoint")]
-	NoIds,
-
+	// TODO: Use errors
+	// #[error("No ids were extracted from the main entity endpoint")]
+	// NoIds,
 	#[error("{0} argument is not a URL")]
 	ArgNotURL(&'static str),
 

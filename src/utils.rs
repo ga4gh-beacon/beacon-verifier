@@ -1,11 +1,12 @@
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 
 use jsonschema::JSONSchema;
 use url::Url;
 
 use crate::error::VerifierError;
-use crate::interface::FilteringTerm;
-use crate::output::EndpointReport;
+// TODO: Use filtering terms
+// use crate::interface::FilteringTerm;
 use crate::{error, Json};
 
 pub fn copy_dir_recursively<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> Result<(), VerifierError> {
@@ -115,24 +116,62 @@ pub fn replace_vars(url: &Url, vars: Vec<(&str, &str)>) -> Url {
 	Url::parse(&url_string).unwrap()
 }
 
-pub fn get_filtering_terms(url: &Url) -> Vec<FilteringTerm> {
-	// Query endpoint
-	match reqwest::blocking::get(url.as_str()) {
-		Ok(response) => {
-			let j = response.json().unwrap();
-			serde_json::from_value(j).unwrap()
-		},
-		Err(_) => Vec::new(),
-	}
-}
+// TODO: Filtering terms
+// pub fn get_filtering_terms(url: &Url) -> Vec<FilteringTerm> {
+// 	// Query endpoint
+// 	match reqwest::blocking::get(url.as_str()) {
+// 		Ok(response) => {
+// 			let j = response.json().unwrap();
+// 			serde_json::from_value(j).unwrap()
+// 		},
+// 		Err(_) => Vec::new(),
+// 	}
+// }
 
-pub fn get_ids(report: &EndpointReport) -> Option<String> {
-	if report.valid.is_none() || !report.valid.unwrap() || report.output.is_none() {
-		return None;
+pub fn get_ids(root_url: &Url, entity_url: &Url) -> Vec<String> {
+	let endpoint_url = url_join(root_url, entity_url);
+	match ping_url(&endpoint_url) {
+		Ok(response) => response
+			.as_object()
+			.expect("JSON is not an object")
+			.get("response")
+			.expect("No 'response' property was found")
+			.as_object()
+			.expect("'response' is not an object")
+			.get("resultSets")
+			.expect("No 'resultSets' property was found")
+			.as_array()
+			.expect("'resultSets' property is not an array")
+			.iter()
+			.flat_map(|rs| {
+				rs.as_object()
+					.expect("resultSet inside 'resultSets' property is not an object")
+					.get("results")
+					.expect("No 'results' property was found")
+					.as_array()
+					.expect("'results' property is not an array")
+					.iter()
+					.map(|instance| {
+						instance["id"]
+							.as_str()
+							.or_else(|| instance["variantInternalId"].as_str())
+							.or_else(|| instance["cohortId"].as_str())
+							.unwrap()
+							.to_string()
+					})
+			})
+			.collect(),
+		Err(e) => {
+			log::error!("Error fetching ids: {:?}", e);
+			Vec::new()
+		},
 	}
-	let output = report.output.clone().unwrap();
-	log::debug!("get_ids from: {}", output);
-	output["id"].as_str().map(std::string::ToString::to_string)
+	// if report.valid.is_none() || !report.valid.unwrap() || report.output.is_none() {
+	// 	return None;
+	// }
+	// let output = report.output.clone().unwrap();
+	// log::debug!("get_ids from: {}", output);
+	// output["id"].as_str().map(std::string::ToString::to_string)
 }
 
 pub fn valid_schema(json_schema: &JSONSchema, instance: &Json) -> Result<Json, VerifierError> {
@@ -157,6 +196,19 @@ pub fn valid_schema(json_schema: &JSONSchema, instance: &Json) -> Result<Json, V
 			Err(VerifierError::BadResponse(er))
 		},
 	}
+}
+
+pub fn compile_schema(schema: &Json) -> Rc<JSONSchema> {
+	let result_sets_schema = match jsonschema::JSONSchema::options().with_meta_schemas().compile(schema) {
+		Ok(schema) => schema,
+		Err(e) => {
+			log::error!("{:?}", e);
+			// TODO: Proper return
+			// return Err(VerifierError::BadSchema);
+			panic!("")
+		},
+	};
+	Rc::new(result_sets_schema)
 }
 
 #[cfg(test)]

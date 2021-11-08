@@ -2,13 +2,16 @@ use std::collections::BTreeMap;
 use std::ffi::OsStr;
 use std::fs::File;
 use std::path::{Path, PathBuf};
+use std::rc::Rc;
 
 use git2::Repository;
+use jsonschema::JSONSchema;
 use url::Url;
 
+use crate::endpoint::BeaconEndpoint;
 use crate::error::VerifierError;
-use crate::framework::Framework;
 use crate::interface::{Endpoint, EntryType, RelatedEndpoint};
+use crate::utils::replace_vars;
 use crate::{utils, Json};
 
 #[derive(Debug, Clone)]
@@ -173,8 +176,88 @@ impl Model {
 		}
 	}
 
-	pub fn validate(&self, _framework: &Framework) -> usize {
-		// TODO: Validate model against the framework
-		self.entities.len()
+	fn build_endpoint(
+		entity_name: String,
+		entity_schema: Rc<JSONSchema>,
+		name: String,
+		url: &Url,
+		vars: Vec<(&str, &str)>,
+	) -> BeaconEndpoint {
+		let replaced_url = replace_vars(url, vars);
+		BeaconEndpoint {
+			entity_name,
+			entity_schema,
+			name,
+			url: replaced_url,
+		}
+	}
+
+	pub fn endpoints(self, root_url: &Url) -> Vec<BeaconEndpoint> {
+		self.entities
+			.into_iter()
+			.flat_map(|entity| {
+				let mut endpoints = Vec::new();
+				let entity_schema = utils::compile_schema(&entity.schema);
+
+				endpoints.push(Self::build_endpoint(
+					entity.name.clone(),
+					entity_schema.clone(),
+					format!("{} all entries", entity.name.clone()),
+					&entity.url,
+					vec![],
+				));
+
+				let ids = utils::get_ids(root_url, &entity.url);
+
+				if let Some(url_single) = &entity.url_single {
+					endpoints.extend(ids.iter().take(1).map(|id| {
+						Self::build_endpoint(
+							entity.name.clone(),
+							entity_schema.clone(),
+							format!("{}  single entry", entity.name.clone()),
+							url_single,
+							vec![("id", id)],
+						)
+					}));
+				}
+
+				// TODO: Filtering terms
+				// if let Some(filtering_terms_url) = &entity.filtering_terms_url {
+				// 	let available_filtering_terms = utils::get_filtering_terms(filtering_terms_url);
+				// 	endpoints.extend(available_filtering_terms.iter().take(1).map(|filtering_term| {
+				// 		Model::build_endpoint(
+				// 			entity.name,
+				// 			entity.schema,
+				// 			format!("{} filtering terms", entity.name.clone()),
+				// 			filtering_terms_url,
+				// 			vec![("id", &id)]
+				// 		)
+				// 	}));
+				// }
+
+				if let Some(related_endpoints) = &entity.related_endpoints {
+					endpoints.extend(related_endpoints.iter().flat_map(|(_, related_endpoint)| {
+						ids.iter().take(1).map(|id| {
+							let name = format!(
+								"{} related with a {}",
+								self.entities_names
+									.get(&related_endpoint.returned_entry_type)
+									.unwrap_or(&String::from("Unknown entity")),
+								entity.name.clone()
+							);
+							Self::build_endpoint(
+								entity.name.clone(),
+								entity_schema.clone(),
+								name,
+								&related_endpoint.url,
+								vec![("id", id)],
+							)
+						})
+					}));
+				}
+
+				endpoints
+			})
+			.collect()
 	}
 }
