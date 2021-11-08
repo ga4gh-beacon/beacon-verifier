@@ -12,16 +12,16 @@ use clap::{crate_authors, crate_version, load_yaml, App, AppSettings};
 use crate::beacon::Beacon;
 use crate::error::VerifierError;
 use crate::framework::Framework;
-use crate::output::BeaconOutput;
 use crate::model::Model;
+use crate::output::BeaconOutput;
 
 mod beacon;
 mod endpoint;
 mod error;
 mod framework;
 mod interface;
-mod output;
 mod model;
+mod output;
 mod utils;
 
 pub type Json = serde_json::Value;

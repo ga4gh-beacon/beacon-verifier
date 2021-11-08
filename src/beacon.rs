@@ -7,8 +7,8 @@ use crate::endpoint::BeaconEndpoint;
 use crate::error::VerifierError;
 use crate::framework::Framework;
 use crate::interface::Granularity;
-use crate::output::{BeaconOutput, EndpointReport, Output};
 use crate::model::{Entity, Model};
+use crate::output::{BeaconOutput, EndpointReport, Output};
 use crate::{utils, Json};
 
 pub struct Beacon {
