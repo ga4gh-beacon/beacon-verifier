@@ -7,23 +7,30 @@ args:
         long: verbose
         help: Sets the level of verbosity
         takes_value: false
-    - only-spec:
+    - quiet:
         required: false
-        long: only-spec
-        help: Only validate the spec referenced
+        short: q
+        long: quiet
+        help: Do not print any logs
         takes_value: false
-    - spec:
+        conflicts_with: verbose
+    - only-framework:
         required: false
-        short: s
-        long: spec
-        help: Location of the spec
+        long: only-framework
+        help: Only validate the framework referenced
+        takes_value: false
+    - model:
+        required: false
+        short: m
+        long: model
+        help: Location of the model
         takes_value: true
         default_value: https://github.com/MrRobb/beacon-v2-Models/BEACON-V2-draft4-Model
     - framework:
         required: false
         short: f
         long: framework
-        help: Beacon Framework
+        help: Location of the framework
         takes_value: true
         default_value: https://github.com/MrRobb/beacon-framework-v2/
     - URL:

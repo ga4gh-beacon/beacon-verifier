@@ -160,12 +160,10 @@ impl Beacon {
 		output.push("Configuration".into(), report.name("Configuration"));
 
 		// Validate beacon map
-		eprintln!();
 		let report = self.validate_against_framework("map", &self.framework.beacon_map_json);
 		output.push("BeaconMap".into(), report.name("BeaconMap"));
 
 		// Validate entry types
-		eprintln!();
 		let report = self.validate_against_framework("entry_types", &self.framework.entry_types_json);
 		output.push("EntryTypes".into(), report.name("EntryTypes"));
 
@@ -175,7 +173,6 @@ impl Beacon {
 		// Validate entities
 		for entity in &self.model.entities {
 			// Get params
-			eprintln!();
 			log::info!("Validating {:?}", entity.name);
 			let replaced_url = utils::url_join(&self.url, &entity.url);
 			log::debug!("GET {}", replaced_url);

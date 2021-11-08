@@ -38,6 +38,10 @@ fn main() -> Result<(), VerifierError> {
 		.get_matches();
 
 	// Verbose
+
+	if matches.is_present("quiet") {
+		log::set_max_level(log::LevelFilter::Off);
+	}
 	if matches.is_present("verbose") {
 		std::env::set_var("RUST_LOG", "debug");
 	}
