@@ -30,7 +30,7 @@ impl BeaconEndpoint {
 		let response_json = match utils::ping_url(&endpoint_url) {
 			Ok(j) => j,
 			Err(e) => {
-				return EndpointReport::new(&self.name, self.url).null(e);
+				return EndpointReport::new(&self.entity_name, &self.name, self.url).null(e);
 			},
 		};
 
@@ -59,7 +59,7 @@ impl BeaconEndpoint {
 					},
 				};
 				if let Err(e) = valid_against_framework {
-					return EndpointReport::new(&self.name, self.url.clone()).error(e);
+					return EndpointReport::new(&self.entity_name, &self.name, self.url.clone()).error(e);
 				}
 
 				if Granularity::Record == g {
@@ -67,10 +67,10 @@ impl BeaconEndpoint {
 					self.validate_resultset_response(&response_json)
 				}
 				else {
-					EndpointReport::new(&self.name, self.url).ok(Some(response_json))
+					EndpointReport::new(&self.entity_name, &self.name, self.url).ok(Some(response_json))
 				}
 			},
-			Err(e) => EndpointReport::new(&self.name, self.url).error(e),
+			Err(e) => EndpointReport::new(&self.entity_name, &self.name, self.url).error(e),
 		}
 	}
 
@@ -99,7 +99,7 @@ impl BeaconEndpoint {
 			.as_bool()
 			.expect("'exists' property is not a bool")
 		{
-			return EndpointReport::new(&self.name, self.url).ok(None);
+			return EndpointReport::new(&self.entity_name, &self.name, self.url).ok(None);
 		}
 
 		// Case: >= 1 results
@@ -126,17 +126,17 @@ impl BeaconEndpoint {
 					.iter()
 					.map(
 						|instance| match utils::valid_schema(&self.entity_schema.clone(), &instance.clone()) {
-							Ok(output) => EndpointReport::new(&self.name, self.url.clone()).ok(Some(output)),
-							Err(e) => EndpointReport::new(&self.name, self.url.clone()).error(e),
+							Ok(output) => EndpointReport::new(&self.entity_name, &self.name, self.url.clone()).ok(Some(output)),
+							Err(e) => EndpointReport::new(&self.entity_name, &self.name, self.url.clone()).error(e),
 						},
 					)
 					.fold(
-						EndpointReport::new(&self.name, self.url.clone()).ok(None),
+						EndpointReport::new(&self.entity_name, &self.name, self.url.clone()).ok(None),
 						EndpointReport::join,
 					)
 			})
 			.fold(
-				EndpointReport::new(&self.name, self.url.clone()).ok(None),
+				EndpointReport::new(&self.entity_name, &self.name, self.url.clone()).ok(None),
 				EndpointReport::join,
 			)
 	}

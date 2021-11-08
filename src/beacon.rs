@@ -62,7 +62,7 @@ impl Beacon {
 		name
 	}
 
-	fn validate_against_framework(&self, location: &str, schema: &Json) -> EndpointReport {
+	fn validate_against_framework(&self, entity_name: &str, location: &str, schema: &Json) -> EndpointReport {
 		let mut url = self.url.clone();
 		url.set_path(Path::new(self.url.path()).join(&location).to_str().unwrap_or(""));
 		let report = match utils::ping_url(&url) {
@@ -71,17 +71,17 @@ impl Beacon {
 					Ok(schema) => schema,
 					Err(e) => {
 						log::error!("{:?}", e);
-						return EndpointReport::new(&self.name, self.url.clone()).null(VerifierError::BadSchema);
+						return EndpointReport::new(entity_name, &self.name, self.url.clone()).null(VerifierError::BadSchema);
 					},
 				};
 				match utils::valid_schema(&json_schema, &beacon_map_json) {
-					Ok(output) => EndpointReport::new(&self.name, self.url.clone()).ok(Some(output)),
-					Err(e) => EndpointReport::new(&self.name, self.url.clone()).error(e),
+					Ok(output) => EndpointReport::new(entity_name, &self.name, self.url.clone()).ok(Some(output)),
+					Err(e) => EndpointReport::new(entity_name, &self.name, self.url.clone()).error(e),
 				}
 			},
 			Err(e) => {
 				log::error!("{}", e);
-				EndpointReport::new(&self.name, self.url.clone()).null(e)
+				EndpointReport::new(entity_name, &self.name, self.url.clone()).null(e)
 			},
 		};
 		report.url(url)
@@ -91,16 +91,16 @@ impl Beacon {
 		let mut output = Output::new();
 
 		// Validate configuration
-		let report = self.validate_against_framework("configuration", &self.framework.configuration_json);
-		output.push("Configuration".into(), report.name("Configuration"));
+		let report = self.validate_against_framework("Configuration", "configuration", &self.framework.configuration_json);
+		output.push(report);
 
 		// Validate beacon map
-		let report = self.validate_against_framework("map", &self.framework.beacon_map_json);
-		output.push("BeaconMap".into(), report.name("BeaconMap"));
+		let report = self.validate_against_framework("BeaconMap", "map", &self.framework.beacon_map_json);
+		output.push(report);
 
 		// Validate entry types
-		let report = self.validate_against_framework("entry_types", &self.framework.entry_types_json);
-		output.push("EntryTypes".into(), report.name("EntryTypes"));
+		let report = self.validate_against_framework("EntryTypes", "entry_types", &self.framework.entry_types_json);
+		output.push(report);
 
 		// Validate endpoints configuration
 		// TODO: Validate OpenAPI 3.0
@@ -117,7 +117,7 @@ impl Beacon {
 					log::info!("Validating {:?}", endpoint.name);
 					endpoint.validate(&self.url, &boolean_json, &count_json, &result_sets_json)
 				})
-				.for_each(|report| output.push(report.name.clone().unwrap_or_else(|| "Unknown".into()), report));
+				.for_each(|report| output.push(report));
 		}
 
 		BeaconOutput {

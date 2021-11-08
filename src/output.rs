@@ -34,11 +34,11 @@ impl Output {
 		}
 	}
 
-	pub fn push(&mut self, entity: String, report: EndpointReport) {
-		match self.results.get_mut(&entity) {
+	pub fn push(&mut self, report: EndpointReport) {
+		match self.results.get_mut(&report.entity_name) {
 			Some(endpoints) => {
 				endpoints.push(EndpointOutput {
-					name: report.name.unwrap(),
+					name: report.name,
 					url: report.url.unwrap(),
 					valid: report.valid,
 					error: report.error.map(|e| e.to_string()),
@@ -46,9 +46,9 @@ impl Output {
 			},
 			None => {
 				self.results.insert(
-					entity,
+					report.entity_name,
 					vec![EndpointOutput {
-						name: report.name.unwrap(),
+						name: report.name,
 						url: report.url.unwrap(),
 						valid: report.valid,
 						error: report.error.map(|e| e.to_string()),
@@ -72,16 +72,22 @@ impl Output {
 
 #[derive(Default)]
 pub struct EndpointReport {
+	pub entity_name: String,
 	pub valid: Option<bool>,
 	pub error: Option<VerifierError>,
 	pub output: Option<Json>,
 	pub url: Option<Url>,
-	pub name: Option<String>,
+	pub name: String,
 }
 
 impl EndpointReport {
-	pub fn new(name: &str, url: Url) -> Self {
-		Self::default().name(name).url(url)
+	pub fn new(entity_name: &str, name: &str, url: Url) -> Self {
+		Self {
+			entity_name: entity_name.to_string(),
+			name: name.to_string(),
+			url: Some(url),
+			..Self::default()
+		}
 	}
 
 	pub fn null(mut self, e: VerifierError) -> Self {
@@ -104,11 +110,6 @@ impl EndpointReport {
 
 	pub fn url(mut self, url: Url) -> Self {
 		self.url = Some(url);
-		self
-	}
-
-	pub fn name(mut self, name: &str) -> Self {
-		self.name = Some(name.into());
 		self
 	}
 
