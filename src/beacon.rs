@@ -1,11 +1,12 @@
 use std::path::Path;
 
 use chrono::SubsecRound;
-use jsonschema::JSONSchema;
 use url::Url;
 
+use crate::endpoint::BeaconEndpoint;
 use crate::error::VerifierError;
 use crate::framework::Framework;
+use crate::interface::Granularity;
 use crate::output::{BeaconOutput, EndpointReport, Output};
 use crate::spec::{Entity, Spec};
 use crate::{utils, Json};
@@ -63,30 +64,6 @@ impl Beacon {
 		name
 	}
 
-	fn valid_schema(&self, json_schema: &JSONSchema, instance: &Json) -> Result<Json, VerifierError> {
-		match json_schema.validate(instance) {
-			Ok(_) => {
-				log::info!("VALID");
-				Ok(instance.clone())
-			},
-			Err(errors) => {
-				log::error!("NOT VALID:");
-				let mut er = String::new();
-				errors.into_iter().for_each(|e| {
-					log::error!(
-						"   ERROR: {:?} - {} ({})",
-						e.kind,
-						e.to_string(),
-						e.instance_path.to_string(),
-					);
-					er.push_str(&e.to_string());
-					er.push('\n');
-				});
-				Err(VerifierError::BadResponse(er))
-			},
-		}
-	}
-
 	fn valid_endpoint(&self, entity: &Entity, endpoint_url: &Url) -> EndpointReport {
 		// Get response
 		let response_json = match utils::ping_url(endpoint_url) {
@@ -96,78 +73,58 @@ impl Beacon {
 			},
 		};
 
-		// Comply against framework
-		let response_schema = match jsonschema::JSONSchema::options()
-			.with_meta_schemas()
-			.compile(&self.framework.result_sets_json)
-		{
-			Ok(schema) => schema,
-			Err(e) => {
-				log::error!("{:?}", e);
-				return EndpointReport::new().null(VerifierError::BadSchema);
-			},
-		};
-		if let Err(e) = self.valid_schema(&response_schema, &response_json) {
-			return EndpointReport::new().error(e);
-		};
-
-		// Compile entity schema
-		let schema = match jsonschema::JSONSchema::options()
-			.with_meta_schemas()
-			.compile(&entity.schema)
-		{
-			Ok(schema) => schema,
-			Err(e) => {
-				log::error!("{:?}", e);
-				return EndpointReport::new().null(VerifierError::BadSchema);
-			},
-		};
-
-		// Case: == 0 results
-		if !response_json
+		// Test granularity
+		let granularity: Result<Granularity, VerifierError> = response_json
 			.as_object()
 			.expect("JSON is not an object")
-			.get("responseSummary")
-			.expect("No 'responseSummary' property was found")
+			.get("meta")
+			.expect("No 'meta' property was found")
 			.as_object()
-			.expect("'responseSummary' is not an object")
-			.get("exists")
-			.expect("No 'exists' property found")
-			.as_bool()
-			.expect("'exists' property is not a bool")
-		{
-			return EndpointReport::new().ok(None);
+			.expect("'meta' is not an object")
+			.get("returnedGranularity")
+			.expect("No 'returnedGranularity' property was found")
+			.as_str()
+			.expect("'returnedGranularity' is not a string")
+			.try_into();
+
+		// Test response
+		match granularity {
+			Ok(g) => {
+				let valid_against_framework = match g {
+					Granularity::Boolean => {
+						BeaconEndpoint::validate_against_framework(&response_json, &self.framework.boolean_json)
+					},
+					Granularity::Count => {
+						BeaconEndpoint::validate_against_framework(&response_json, &self.framework.count_json)
+					},
+					Granularity::Aggregated | Granularity::Record => {
+						BeaconEndpoint::validate_against_framework(&response_json, &self.framework.result_sets_json)
+					},
+				};
+				if let Err(e) = valid_against_framework {
+					return EndpointReport::new().error(e);
+				}
+
+				if Granularity::Record == g {
+					// Compile entity schema
+					let schema = match jsonschema::JSONSchema::options()
+						.with_meta_schemas()
+						.compile(&entity.schema)
+					{
+						Ok(schema) => schema,
+						Err(e) => {
+							log::error!("{:?}", e);
+							return EndpointReport::new().null(VerifierError::BadSchema);
+						},
+					};
+					BeaconEndpoint::validate_resultset_response(&response_json, &schema)
+				}
+				else {
+					EndpointReport::new().ok(Some(response_json))
+				}
+			},
+			Err(e) => EndpointReport::new().error(e),
 		}
-
-		// Case: >= 1 results
-		log::info!("Verifying results...");
-		response_json
-			.as_object()
-			.expect("JSON is not an object")
-			.get("response")
-			.expect("No 'response' property was found")
-			.as_object()
-			.expect("'response' is not an object")
-			.get("resultSets")
-			.expect("No 'resultSets' property was found")
-			.as_array()
-			.expect("'resultSets' property is not an array")
-			.iter()
-			.map(|rs| {
-				rs.as_object()
-					.expect("resultSet inside 'resultSets' property is not an object")
-					.get("results")
-					.expect("No 'results' property was found")
-					.as_array()
-					.expect("'results' property is not an array")
-					.iter()
-					.map(|instance| match self.valid_schema(&schema, &instance.clone()) {
-						Ok(output) => EndpointReport::new().ok(Some(output)),
-						Err(e) => EndpointReport::new().error(e),
-					})
-					.fold(EndpointReport::new().ok(None), EndpointReport::join)
-			})
-			.fold(EndpointReport::new().ok(None), EndpointReport::join)
 	}
 
 	fn validate_against_framework(&self, location: &str, schema: &Json) -> EndpointReport {
@@ -182,7 +139,7 @@ impl Beacon {
 						return EndpointReport::new().null(VerifierError::BadSchema);
 					},
 				};
-				match self.valid_schema(&json_schema, &beacon_map_json) {
+				match utils::valid_schema(&json_schema, &beacon_map_json) {
 					Ok(output) => EndpointReport::new().ok(Some(output)),
 					Err(e) => EndpointReport::new().error(e),
 				}

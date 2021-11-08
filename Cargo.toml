@@ -22,9 +22,8 @@ tempfile = "3.2.0"
 git2 = "0.13"
 
 # Validation
-jsonschema = { version = "0.13.1", features = ["reqwest"] }
-url = { version = "2.2.2", features = ["serde"] }
-regex = "1.5.4"
+jsonschema = { version = "0.13", features = ["reqwest"] }
+url = { version = "2.2", features = ["serde"] }
 reqwest = { version = "0.11", features = ["blocking", "json"] }
 
 # Output
@@ -33,6 +32,6 @@ serde_json = "1.0"
 chrono = { version = "0.4", features = ["serde"] }
 
 # Log
-log = "0.4.0"
-pretty_env_logger = "0.4.0"
+log = "0.4"
+pretty_env_logger = "0.4"
 thiserror = "1.0"

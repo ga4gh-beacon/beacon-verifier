@@ -15,6 +15,8 @@ pub struct Framework {
 	pub beacon_map_json: Json,
 	pub entry_types_json: Json,
 	pub result_sets_json: Json,
+	pub boolean_json: Json,
+	pub count_json: Json,
 	files: BTreeMap<PathBuf, Json>,
 }
 
@@ -55,6 +57,8 @@ impl Framework {
 			beacon_map_json: Json::Null,
 			entry_types_json: Json::Null,
 			result_sets_json: Json::Null,
+			boolean_json: Json::Null,
+			count_json: Json::Null,
 			files: BTreeMap::new(),
 		};
 
@@ -94,6 +98,16 @@ impl Framework {
 			.files
 			.get(&base_path.join("responses").join("beaconEntryTypesResponse.json"))
 			.expect("beaconEntryTypesResponse.json not found")
+			.clone();
+		self.boolean_json = self
+			.files
+			.get(&base_path.join("responses").join("beaconBooleanResponse.json"))
+			.expect("beaconBooleanResponse.json not found")
+			.clone();
+		self.count_json = self
+			.files
+			.get(&base_path.join("responses").join("beaconCountResponse.json"))
+			.expect("beaconCountResponse.json not found")
 			.clone();
 		self.result_sets_json = self
 			.files

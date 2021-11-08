@@ -1,4 +1,8 @@
-#![allow(clippy::module_name_repetitions, clippy::unused_self, clippy::missing_const_for_fn)]
+#![allow(
+	clippy::module_name_repetitions,
+	clippy::unused_self,
+	clippy::missing_const_for_fn // TODO: Remove when #![feature(const_precise_live_drops)] gets stabilized
+)]
 
 use std::collections::BTreeMap;
 

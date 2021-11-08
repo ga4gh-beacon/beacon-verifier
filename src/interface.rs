@@ -4,6 +4,8 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
+use crate::error::VerifierError;
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Endpoint {
@@ -61,4 +63,26 @@ pub struct FilteringTerm {
 	id: String,
 	label: Option<String>,
 	scope: Option<String>,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum Granularity {
+	Boolean,
+	Count,
+	Aggregated,
+	Record,
+}
+
+impl TryFrom<&str> for Granularity {
+	type Error = VerifierError;
+
+	fn try_from(value: &str) -> Result<Self, Self::Error> {
+		match value {
+			"boolean" => Ok(Self::Boolean),
+			"count" => Ok(Self::Count),
+			"aggregated" => Ok(Self::Aggregated),
+			"record" => Ok(Self::Record),
+			_ => Err(VerifierError::BadGranularity),
+		}
+	}
 }

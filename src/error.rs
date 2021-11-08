@@ -1,3 +1,5 @@
+use std::path::PathBuf;
+
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -8,8 +10,8 @@ pub enum VerifierError {
 	#[error("IO Error")]
 	IoError(#[from] std::io::Error),
 
-	#[error("Bad json")]
-	BadJson,
+	#[error("Bad json: {0}")]
+	SpecHasBadJson(PathBuf),
 
 	#[error("Bad /info endpoint: {0}")]
 	BadInfo(String),
@@ -37,4 +39,7 @@ pub enum VerifierError {
 
 	#[error("{0} argument is not a URL")]
 	ArgNotURL(&'static str),
+
+	#[error("Granularity is not one of [\"boolean\", \"count\", \"aggregated\", \"record\"]")]
+	BadGranularity,
 }

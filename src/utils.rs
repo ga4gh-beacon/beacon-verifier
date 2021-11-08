@@ -1,5 +1,6 @@
 use std::path::{Path, PathBuf};
 
+use jsonschema::JSONSchema;
 use url::Url;
 
 use crate::error::VerifierError;
@@ -132,6 +133,30 @@ pub fn get_ids(report: &EndpointReport) -> Option<String> {
 	let output = report.output.clone().unwrap();
 	log::debug!("get_ids from: {}", output);
 	output["id"].as_str().map(std::string::ToString::to_string)
+}
+
+pub fn valid_schema(json_schema: &JSONSchema, instance: &Json) -> Result<Json, VerifierError> {
+	match json_schema.validate(instance) {
+		Ok(_) => {
+			log::info!("VALID");
+			Ok(instance.clone())
+		},
+		Err(errors) => {
+			log::error!("NOT VALID:");
+			let mut er = String::new();
+			errors.into_iter().for_each(|e| {
+				log::error!(
+					"   ERROR: {:?} - {} ({})",
+					e.kind,
+					e.to_string(),
+					e.instance_path.to_string(),
+				);
+				er.push_str(&e.to_string());
+				er.push('\n');
+			});
+			Err(VerifierError::BadResponse(er))
+		},
+	}
 }
 
 #[cfg(test)]
