@@ -22,7 +22,7 @@ pub struct Entity {
 }
 
 #[derive(Debug, Clone)]
-pub struct Spec {
+pub struct Model {
 	pub entities: Vec<Entity>,
 	pub entities_names: BTreeMap<String, String>,
 	pub configuration_json: Json,
@@ -31,7 +31,7 @@ pub struct Spec {
 	files: BTreeMap<PathBuf, Json>,
 }
 
-impl Spec {
+impl Model {
 	pub fn load(location: &Url) -> Result<Self, VerifierError> {
 		let dir = tempfile::tempdir().expect("Could not create temporary directory");
 
@@ -40,7 +40,7 @@ impl Spec {
 			utils::copy_dir_recursively(location.path(), &dir).expect("Copy dir recursively failed");
 		}
 		else {
-			// Parse spec repo URL
+			// Parse model repo URL
 			assert_eq!(
 				location.domain().unwrap_or(""),
 				"github.com",
@@ -63,7 +63,7 @@ impl Spec {
 			utils::copy_dir_recursively(full_git_dir.path().join(path), dir.path()).unwrap();
 		}
 
-		let mut spec = Self {
+		let mut model = Self {
 			entities: Vec::new(),
 			entities_names: BTreeMap::new(),
 			configuration_json: Json::Null,
@@ -75,23 +75,23 @@ impl Spec {
 		// Load files
 		for entry in walkdir::WalkDir::new(&dir).into_iter().flatten() {
 			if entry.path().extension() == Some(OsStr::new("json")) {
-				spec.add(entry.path())?;
+				model.add(entry.path())?;
 			}
 		}
 
 		// Load configuration
-		spec.load_configuration(dir.path());
+		model.load_configuration(dir.path());
 
 		// Load entitites
-		spec.load_entities(dir.path());
+		model.load_entities(dir.path());
 
-		Ok(spec)
+		Ok(model)
 	}
 
 	fn add(&mut self, path: &Path) -> Result<(), VerifierError> {
 		log::debug!("Adding JSON file: {:?}", path);
 		let file = File::open(path).unwrap();
-		let json = serde_json::from_reader(file).map_err(|_| VerifierError::BadJson)?;
+		let json = serde_json::from_reader(file).map_err(|_| VerifierError::ModelHasBadJson(path.to_path_buf()))?;
 		self.files.insert(path.to_path_buf(), json);
 		Ok(())
 	}

@@ -13,14 +13,15 @@ use crate::beacon::Beacon;
 use crate::error::VerifierError;
 use crate::framework::Framework;
 use crate::output::BeaconOutput;
-use crate::spec::Spec;
+use crate::model::Model;
 
 mod beacon;
+mod endpoint;
 mod error;
 mod framework;
 mod interface;
 mod output;
-mod spec;
+mod model;
 mod utils;
 
 pub type Json = serde_json::Value;
@@ -56,21 +57,21 @@ fn main() -> Result<(), VerifierError> {
 	let framework = Framework::load(&framework_location).expect("Loading framework failed");
 	log::debug!("Framework loaded");
 
-	// Load spec
-	let spec_location = url::Url::parse(matches.value_of("spec").expect("No --spec passed as argument"))
-		.map_err(|_| VerifierError::ArgNotURL("--spec"))?;
-	log::debug!("Loading spec from: {}", spec_location);
-	let spec = Spec::load(&spec_location).expect("Loading spec failed");
-	let n_entitites = spec.validate(&framework);
-	log::info!("Valid spec (number of entities: {})", n_entitites);
+	// Load model
+	let model_location = url::Url::parse(matches.value_of("model").expect("No --model passed as argument"))
+		.map_err(|_| VerifierError::ArgNotURL("--model"))?;
+	log::debug!("Loading model from: {}", model_location);
+	let model = Model::load(&model_location).expect("Loading model failed");
+	let n_entitites = model.validate(&framework);
+	log::info!("Valid model (number of entities: {})", n_entitites);
 
 	// Validate beacons
-	if !matches.is_present("only-spec") {
+	if !matches.is_present("only-model") {
 		// Load beacon
 		let beacon_url =
 			url::Url::parse(matches.value_of("URL").expect("No URL")).map_err(|_| VerifierError::ArgNotURL("URL"))?;
 		log::info!("Validating implementation on {}", beacon_url);
-		let output = match Beacon::new(spec, framework, &beacon_url) {
+		let output = match Beacon::new(model, framework, &beacon_url) {
 			Ok(beacon) => beacon.validate(),
 			Err(e) => BeaconOutput {
 				name: format!("Unknown Beacon ({})", e),

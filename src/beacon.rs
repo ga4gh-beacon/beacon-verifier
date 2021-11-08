@@ -8,18 +8,18 @@ use crate::error::VerifierError;
 use crate::framework::Framework;
 use crate::interface::Granularity;
 use crate::output::{BeaconOutput, EndpointReport, Output};
-use crate::spec::{Entity, Spec};
+use crate::model::{Entity, Model};
 use crate::{utils, Json};
 
 pub struct Beacon {
 	name: String,
 	url: Url,
-	spec: Spec,
+	model: Model,
 	framework: Framework,
 }
 
 impl Beacon {
-	pub fn new(spec: Spec, framework: Framework, url: &Url) -> Result<Self, VerifierError> {
+	pub fn new(model: Model, framework: Framework, url: &Url) -> Result<Self, VerifierError> {
 		let mut info_url = url.clone();
 		info_url.set_path(Path::new(url.path()).join("info").to_str().unwrap_or(""));
 		let info: Json = reqwest::blocking::get(&info_url.to_string())?.json().unwrap();
@@ -28,7 +28,7 @@ impl Beacon {
 		Ok(Self {
 			name: Self::get_name(&info, url),
 			url: url.clone(),
-			spec,
+			model,
 			framework,
 		})
 	}
@@ -173,7 +173,7 @@ impl Beacon {
 		// TODO: Validate OpenAPI 3.0
 
 		// Validate entities
-		for entity in &self.spec.entities {
+		for entity in &self.model.entities {
 			// Get params
 			eprintln!();
 			log::info!("Validating {:?}", entity.name);
@@ -249,7 +249,7 @@ impl Beacon {
 						report_ids
 							.name(&format!(
 								"{} related with a {}",
-								self.spec
+								self.model
 									.entities_names
 									.get(&related_enpoint.returned_entry_type)
 									.unwrap_or(&String::from("Unknown entity")),

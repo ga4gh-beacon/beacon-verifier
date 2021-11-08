@@ -11,7 +11,7 @@ pub enum VerifierError {
 	IoError(#[from] std::io::Error),
 
 	#[error("Bad json: {0}")]
-	SpecHasBadJson(PathBuf),
+	ModelHasBadJson(PathBuf),
 
 	#[error("Bad /info endpoint: {0}")]
 	BadInfo(String),
@@ -22,7 +22,7 @@ pub enum VerifierError {
 	#[error("Bad response format (JSON could not be parsed)")]
 	ResponseIsNotJson,
 
-	#[error("Unable to compile the schema (use the --spec option)")]
+	#[error("Unable to compile the schema (use the --model option)")]
 	BadSchema,
 
 	#[error("Bad framework (use the --framework option)")]

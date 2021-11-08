@@ -29,7 +29,7 @@ impl Framework {
 			utils::copy_dir_recursively(location.path(), &dir).expect("Copy dir recursively failed");
 		}
 		else {
-			// Parse spec repo URL
+			// Parse model repo URL
 			assert_eq!(
 				location.domain().unwrap_or(""),
 				"github.com",
