@@ -209,51 +209,53 @@ impl Model {
 
 				let ids = utils::get_ids(root_url, &entity.url);
 
-				if let Some(url_single) = &entity.url_single {
-					endpoints.extend(ids.iter().take(1).map(|id| {
-						Self::build_endpoint(
-							entity.name.clone(),
-							entity_schema.clone(),
-							format!("{}  single entry", entity.name.clone()),
-							url_single,
-							vec![("id", id)],
-						)
-					}));
-				}
-
-				// TODO: Filtering terms
-				// if let Some(filtering_terms_url) = &entity.filtering_terms_url {
-				// 	let available_filtering_terms = utils::get_filtering_terms(filtering_terms_url);
-				// 	endpoints.extend(available_filtering_terms.iter().take(1).map(|filtering_term| {
-				// 		Model::build_endpoint(
-				// 			entity.name,
-				// 			entity.schema,
-				// 			format!("{} filtering terms", entity.name.clone()),
-				// 			filtering_terms_url,
-				// 			vec![("id", &id)]
-				// 		)
-				// 	}));
-				// }
-
-				if let Some(related_endpoints) = &entity.related_endpoints {
-					endpoints.extend(related_endpoints.iter().flat_map(|(_, related_endpoint)| {
-						ids.iter().take(1).map(|id| {
-							let name = format!(
-								"{} related with a {}",
-								self.entities_names
-									.get(&related_endpoint.returned_entry_type)
-									.unwrap_or(&String::from("Unknown entity")),
-								entity.name.clone()
-							);
+				if let Ok(ids) = ids {
+					if let Some(url_single) = &entity.url_single {
+						endpoints.extend(ids.iter().take(1).map(|id| {
 							Self::build_endpoint(
 								entity.name.clone(),
 								entity_schema.clone(),
-								name,
-								&related_endpoint.url,
+								format!("{} single entry", entity.name.clone()),
+								url_single,
 								vec![("id", id)],
 							)
-						})
-					}));
+						}));
+					}
+
+					// TODO: Filtering terms
+					// if let Some(filtering_terms_url) = &entity.filtering_terms_url {
+					// 	let available_filtering_terms = utils::get_filtering_terms(filtering_terms_url);
+					// 	endpoints.extend(available_filtering_terms.iter().take(1).map(|filtering_term| {
+					// 		Model::build_endpoint(
+					// 			entity.name,
+					// 			entity.schema,
+					// 			format!("{} filtering terms", entity.name.clone()),
+					// 			filtering_terms_url,
+					// 			vec![("id", &id)]
+					// 		)
+					// 	}));
+					// }
+
+					if let Some(related_endpoints) = &entity.related_endpoints {
+						endpoints.extend(related_endpoints.iter().flat_map(|(_, related_endpoint)| {
+							ids.iter().take(1).map(|id| {
+								let name = format!(
+									"{} related with a {}",
+									self.entities_names
+										.get(&related_endpoint.returned_entry_type)
+										.unwrap_or(&String::from("Unknown entity")),
+									entity.name.clone()
+								);
+								Self::build_endpoint(
+									entity.name.clone(),
+									entity_schema.clone(),
+									name,
+									&related_endpoint.url,
+									vec![("id", id)],
+								)
+							})
+						}));
+					}
 				}
 
 				endpoints

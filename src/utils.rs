@@ -5,6 +5,7 @@ use jsonschema::JSONSchema;
 use url::Url;
 
 use crate::error::VerifierError;
+use crate::interface::{BeaconResultSetResponse, EntityResult};
 // TODO: Use filtering terms
 // use crate::interface::FilteringTerm;
 use crate::{error, Json};
@@ -128,50 +129,24 @@ pub fn replace_vars(url: &Url, vars: Vec<(&str, &str)>) -> Url {
 // 	}
 // }
 
-pub fn get_ids(root_url: &Url, entity_url: &Url) -> Vec<String> {
+pub fn get_ids(root_url: &Url, entity_url: &Url) -> Result<Vec<String>, VerifierError> {
 	let endpoint_url = url_join(root_url, entity_url);
 	match ping_url(&endpoint_url) {
-		Ok(response) => response
-			.as_object()
-			.expect("JSON is not an object")
-			.get("response")
-			.expect("No 'response' property was found")
-			.as_object()
-			.expect("'response' is not an object")
-			.get("resultSets")
-			.expect("No 'resultSets' property was found")
-			.as_array()
-			.expect("'resultSets' property is not an array")
-			.iter()
-			.flat_map(|rs| {
-				rs.as_object()
-					.expect("resultSet inside 'resultSets' property is not an object")
-					.get("results")
-					.expect("No 'results' property was found")
-					.as_array()
-					.expect("'results' property is not an array")
-					.iter()
-					.map(|instance| {
-						instance["id"]
-							.as_str()
-							.or_else(|| instance["variantInternalId"].as_str())
-							.or_else(|| instance["cohortId"].as_str())
-							.unwrap()
-							.to_string()
-					})
-			})
-			.collect(),
+		Ok(response) => {
+			let resultset_response: BeaconResultSetResponse =
+				serde_json::from_value(response).map_err(|e| -> VerifierError { e.into() })?;
+			Ok(resultset_response
+				.response
+				.result_sets
+				.iter()
+				.flat_map(|rs| rs.results.iter().map(EntityResult::id))
+				.collect())
+		},
 		Err(e) => {
-			log::error!("Error fetching ids: {:?}", e);
-			Vec::new()
+			log::error!("Error endpoint with the ids: {:?}", e);
+			Ok(Vec::new())
 		},
 	}
-	// if report.valid.is_none() || !report.valid.unwrap() || report.output.is_none() {
-	// 	return None;
-	// }
-	// let output = report.output.clone().unwrap();
-	// log::debug!("get_ids from: {}", output);
-	// output["id"].as_str().map(std::string::ToString::to_string)
 }
 
 pub fn valid_schema(json_schema: &JSONSchema, instance: &Json) -> Result<Json, VerifierError> {

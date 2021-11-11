@@ -4,8 +4,6 @@ use std::path::PathBuf;
 use serde::{Deserialize, Serialize};
 use url::Url;
 
-use crate::error::VerifierError;
-
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Endpoint {
@@ -65,7 +63,8 @@ pub struct FilteringTerm {
 	scope: Option<String>,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Granularity {
 	Boolean,
 	Count,
@@ -73,16 +72,50 @@ pub enum Granularity {
 	Record,
 }
 
-impl TryFrom<&str> for Granularity {
-	type Error = VerifierError;
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BeaconResultSetResponse {
+	pub response: ResultSetResponse,
+}
 
-	fn try_from(value: &str) -> Result<Self, Self::Error> {
-		match value {
-			"boolean" => Ok(Self::Boolean),
-			"count" => Ok(Self::Count),
-			"aggregated" => Ok(Self::Aggregated),
-			"record" => Ok(Self::Record),
-			_ => Err(VerifierError::BadGranularity),
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ResultSetResponse {
+	pub result_sets: Vec<ResultSet>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct ResultSet {
+	pub results: Vec<EntityResult>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+#[serde(rename_all = "camelCase")]
+pub enum EntityResult {
+	General { id: String },
+	Variant { variant_internal_id: String },
+	Cohort { cohort_id: String },
+}
+
+impl EntityResult {
+	pub fn id(&self) -> String {
+		match self {
+			EntityResult::General { id } => id.clone(),
+			EntityResult::Variant { variant_internal_id } => variant_internal_id.clone(),
+			EntityResult::Cohort { cohort_id } => cohort_id.clone(),
 		}
 	}
+}
+
+/// Extract granularity
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BeaconMetaGranularityResponse {
+	pub meta: MetaGranularityResponse,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MetaGranularityResponse {
+	pub returned_granularity: Granularity,
 }

@@ -40,6 +40,6 @@ pub enum VerifierError {
 	#[error("{0} argument is not a URL")]
 	ArgNotURL(&'static str),
 
-	#[error("Granularity is not one of [\"boolean\", \"count\", \"aggregated\", \"record\"]")]
-	BadGranularity,
+	#[error("Error deserializing JSON: {0}")]
+	SerdeJsonError(#[from] serde_json::Error),
 }

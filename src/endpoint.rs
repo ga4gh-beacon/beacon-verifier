@@ -4,7 +4,7 @@ use jsonschema::JSONSchema;
 use url::Url;
 
 use crate::error::VerifierError;
-use crate::interface::Granularity;
+use crate::interface::{BeaconMetaGranularityResponse, Granularity};
 use crate::output::EndpointReport;
 use crate::{utils, Json};
 
@@ -30,28 +30,18 @@ impl BeaconEndpoint {
 		let response_json = match utils::ping_url(&endpoint_url) {
 			Ok(j) => j,
 			Err(e) => {
-				return EndpointReport::new(&self.entity_name, &self.name, self.url).null(e);
+				return EndpointReport::new(&self.entity_name, &self.name, endpoint_url).null(e);
 			},
 		};
 
 		// Test granularity
-		let granularity: Result<Granularity, VerifierError> = response_json
-			.as_object()
-			.expect("JSON is not an object")
-			.get("meta")
-			.expect("No 'meta' property was found")
-			.as_object()
-			.expect("'meta' is not an object")
-			.get("returnedGranularity")
-			.expect("No 'returnedGranularity' property was found")
-			.as_str()
-			.expect("'returnedGranularity' is not a string")
-			.try_into();
+		let beacon_meta_response: Result<BeaconMetaGranularityResponse, _> =
+			serde_json::from_value(response_json.clone());
 
 		// Test response
-		match granularity {
-			Ok(g) => {
-				let valid_against_framework = match g {
+		match beacon_meta_response {
+			Ok(br) => {
+				let valid_against_framework = match br.meta.returned_granularity {
 					Granularity::Boolean => self.validate_against_framework(&response_json, boolean_json),
 					Granularity::Count => self.validate_against_framework(&response_json, count_json),
 					Granularity::Aggregated | Granularity::Record => {
@@ -59,18 +49,18 @@ impl BeaconEndpoint {
 					},
 				};
 				if let Err(e) = valid_against_framework {
-					return EndpointReport::new(&self.entity_name, &self.name, self.url.clone()).error(e);
+					return EndpointReport::new(&self.entity_name, &self.name, endpoint_url).error(e);
 				}
 
-				if Granularity::Record == g {
+				if Granularity::Record == br.meta.returned_granularity {
 					// Compile entity schema
-					self.validate_resultset_response(&response_json)
+					self.validate_resultset_response(&response_json).url(endpoint_url)
 				}
 				else {
-					EndpointReport::new(&self.entity_name, &self.name, self.url).ok(Some(response_json))
+					EndpointReport::new(&self.entity_name, &self.name, endpoint_url).ok(Some(response_json))
 				}
 			},
-			Err(e) => EndpointReport::new(&self.entity_name, &self.name, self.url).error(e),
+			Err(e) => EndpointReport::new(&self.entity_name, &self.name, endpoint_url).error(e.into()),
 		}
 	}
 
