@@ -165,7 +165,7 @@ pub fn valid_schema(json_schema: &JSONSchema, instance: &Json) -> Result<Json, V
 					e.to_string(),
 					e.instance_path.to_string(),
 				);
-				er.push_str(&e.to_string());
+				er.push_str(&format!("{} ({})", e.to_string(), e.instance_path.to_string()));
 				er.push('\n');
 			});
 			Err(VerifierError::BadResponse(er))
