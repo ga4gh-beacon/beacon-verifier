@@ -46,7 +46,6 @@ impl BeaconEndpoint {
 					Granularity::Boolean => self.validate_against_framework(&response_json, boolean_json),
 					Granularity::Count => self.validate_against_framework(&response_json, count_json),
 					Granularity::Aggregated | Granularity::Record => {
-						log::info!("ENTITY_NAME: {}", self.entity_name);
 						match self.entity_name.to_lowercase().as_str() {
 							"dataset" | "cohort" => self.validate_against_framework(&response_json, collections_json),
 							_ => self.validate_against_framework(&response_json, result_sets_json),
