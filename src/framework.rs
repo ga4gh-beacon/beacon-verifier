@@ -11,6 +11,7 @@ use crate::{utils, Json};
 
 #[derive(Debug, Clone)]
 pub struct Framework {
+	pub info_json: Json,
 	pub configuration_json: Json,
 	pub beacon_map_json: Json,
 	pub entry_types_json: Json,
@@ -54,6 +55,7 @@ impl Framework {
 		}
 
 		let mut framework = Self {
+			info_json: Json::Null,
 			configuration_json: Json::Null,
 			beacon_map_json: Json::Null,
 			entry_types_json: Json::Null,
@@ -86,6 +88,11 @@ impl Framework {
 	}
 
 	fn load_configuration(&mut self, base_path: &Path) {
+		self.info_json = self
+			.files
+			.get(&base_path.join("responses").join("beaconInfoResponse.json"))
+			.expect("beaconInfoResponse.json not found")
+			.clone();
 		self.beacon_map_json = self
 			.files
 			.get(&base_path.join("responses").join("beaconMapResponse.json"))

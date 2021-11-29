@@ -91,16 +91,25 @@ impl Beacon {
 	pub fn validate(self) -> BeaconOutput {
 		let mut output = Output::new();
 
+		// Validate info
+		log::info!("Validating \"Info\"");
+		let report =
+			self.validate_against_framework("Info", "info", &self.framework.info_json);
+		output.push(report);
+
 		// Validate configuration
+		log::info!("Validating \"Configuration\"");
 		let report =
 			self.validate_against_framework("Configuration", "configuration", &self.framework.configuration_json);
 		output.push(report);
 
 		// Validate beacon map
+		log::info!("Validating \"Beacon Map\"");
 		let report = self.validate_against_framework("BeaconMap", "map", &self.framework.beacon_map_json);
 		output.push(report);
 
 		// Validate entry types
+		log::info!("Validating \"Entry Types\"");
 		let report = self.validate_against_framework("EntryTypes", "entry_types", &self.framework.entry_types_json);
 		output.push(report);
 
