@@ -72,7 +72,7 @@ fn main() -> Result<(), VerifierError> {
 			.map_err(|_| VerifierError::ArgNotURL("--model"))?;
 		log::debug!("Loading model from: {}", model_location);
 		let model = Model::load(&model_location).expect("Loading model failed");
-		log::info!("Number of entities of the model: {})", model.entities.len());
+		log::info!("Number of entities of the model: {}", model.entities.len());
 		Some(model)
 	};
 
