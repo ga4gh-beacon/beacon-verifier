@@ -19,7 +19,7 @@ pub struct Entity {
 	pub name: String,
 	pub url: Url,
 	pub url_single: Option<Url>,
-	pub schema: Json,
+	pub schema: Rc<JSONSchema>,
 	pub filtering_terms_url: Option<Url>,
 	pub related_endpoints: Option<BTreeMap<String, RelatedEndpoint>>,
 }
@@ -162,7 +162,7 @@ impl Model {
 				})
 				.clone();
 			self.entities.push(Entity {
-				schema: entity_schema,
+				schema: utils::compile_schema(&entity_schema),
 				name: self
 					.entities_names
 					.get(&endpoint.entry_type)
@@ -194,10 +194,10 @@ impl Model {
 
 	pub fn endpoints(self, root_url: &Url) -> Vec<BeaconEndpoint> {
 		self.entities
-			.into_iter()
+			.iter()
 			.flat_map(|entity| {
 				let mut endpoints = Vec::new();
-				let entity_schema = utils::compile_schema(&entity.schema);
+				let entity_schema = &entity.schema;
 
 				endpoints.push(Self::build_endpoint(
 					entity.name.clone(),
@@ -239,16 +239,21 @@ impl Model {
 					if let Some(related_endpoints) = &entity.related_endpoints {
 						endpoints.extend(related_endpoints.iter().flat_map(|(_, related_endpoint)| {
 							ids.iter().take(1).map(|id| {
-								let name = format!(
-									"{} related with a {}",
-									self.entities_names
-										.get(&related_endpoint.returned_entry_type)
-										.unwrap_or(&String::from("Unknown entity")),
-									entity.name.clone()
-								);
+								let default_entity_name = "Unknown entity".to_string();
+								let related_entity_name = self
+									.entities_names
+									.get(&related_endpoint.returned_entry_type)
+									.unwrap_or(&default_entity_name);
+								let name = format!("{} related with a {}", related_entity_name, entity.name.clone());
+								let related_entity_schema = &self
+									.entities
+									.iter()
+									.find(|e| &e.name == related_entity_name)
+									.unwrap()
+									.schema;
 								Self::build_endpoint(
 									entity.name.clone(),
-									entity_schema.clone(),
+									related_entity_schema.clone(),
 									name,
 									&related_endpoint.url,
 									vec![("id", id)],
