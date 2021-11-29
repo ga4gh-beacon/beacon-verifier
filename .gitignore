@@ -1,3 +1,10 @@
 .DS_Store
 target/
 tests
+.vscode/
+
+.dockerignore
+
+Dockerfile
+
+utils/flamegraph.svg
