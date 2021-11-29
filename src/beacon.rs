@@ -112,12 +112,19 @@ impl Beacon {
 			let boolean_json = utils::compile_schema(&self.framework.boolean_json);
 			let count_json = utils::compile_schema(&self.framework.count_json);
 			let result_sets_json = utils::compile_schema(&self.framework.result_sets_json);
+			let collections_json = utils::compile_schema(&self.framework.collections_json);
 			model
 				.endpoints(&self.url)
 				.into_iter()
 				.map(|endpoint| {
 					log::info!("Validating {:?}", endpoint.name);
-					endpoint.validate(&self.url, &boolean_json, &count_json, &result_sets_json)
+					endpoint.validate(
+						&self.url,
+						&boolean_json,
+						&count_json,
+						&result_sets_json,
+						&collections_json,
+					)
 				})
 				.for_each(|report| output.push(report));
 		}
