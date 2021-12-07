@@ -114,10 +114,8 @@ impl EndpointReport {
 	}
 
 	pub fn join(self, report2: Self) -> Self {
-		if let Some(true) = self.valid {
-			if report2.valid.is_none() || !report2.valid.unwrap() {
-				return report2;
-			}
+		if self.valid == Some(true) && (report2.valid.is_none() || !report2.valid.unwrap()) {
+			return report2;
 		};
 		self
 	}

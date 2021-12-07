@@ -32,25 +32,27 @@ impl Beacon {
 	}
 
 	fn get_name(info: &Json, url: &Url) -> String {
-		let name_json = if let Some(response) = info.get("response") {
-			if let Some(name) = response.get("name") {
-				name.clone()
-			}
-			else {
+		let name_json = info.get("response").map_or_else(
+			|| {
 				log::error!(
 					"{}",
-					VerifierError::BadInfo(format!("No 'name' in {}/info inside json object 'response'", url))
+					VerifierError::BadInfo(format!("No 'response' property in {}/info", url))
 				);
 				Json::String("Unknown name (bad /info)".into())
-			}
-		}
-		else {
-			log::error!(
-				"{}",
-				VerifierError::BadInfo(format!("No 'response' property in {}/info", url))
-			);
-			Json::String("Unknown name (bad /info)".into())
-		};
+			},
+			|response| {
+				response.get("name").map_or_else(
+					|| {
+						log::error!(
+							"{}",
+							VerifierError::BadInfo(format!("No 'name' in {}/info inside json object 'response'", url))
+						);
+						Json::String("Unknown name (bad /info)".into())
+					},
+					std::clone::Clone::clone,
+				)
+			},
+		);
 
 		let name = if name_json.is_string() {
 			name_json.as_str().unwrap().to_string()
@@ -93,8 +95,7 @@ impl Beacon {
 
 		// Validate info
 		log::info!("Validating \"Info\"");
-		let report =
-			self.validate_against_framework("Info", "info", &self.framework.info_json);
+		let report = self.validate_against_framework("Info", "info", &self.framework.info_json);
 		output.push(report);
 
 		// Validate configuration

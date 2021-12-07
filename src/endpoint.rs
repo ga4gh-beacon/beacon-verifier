@@ -45,11 +45,9 @@ impl BeaconEndpoint {
 				let valid_against_framework = match br.meta.returned_granularity {
 					Granularity::Boolean => self.validate_against_framework(&response_json, boolean_json),
 					Granularity::Count => self.validate_against_framework(&response_json, count_json),
-					Granularity::Aggregated | Granularity::Record => {
-						match self.entity_name.to_lowercase().as_str() {
-							"dataset" | "cohort" => self.validate_against_framework(&response_json, collections_json),
-							_ => self.validate_against_framework(&response_json, result_sets_json),
-						}
+					Granularity::Aggregated | Granularity::Record => match self.entity_name.to_lowercase().as_str() {
+						"dataset" | "cohort" => self.validate_against_framework(&response_json, collections_json),
+						_ => self.validate_against_framework(&response_json, result_sets_json),
 					},
 				};
 				if let Err(e) = valid_against_framework {
