@@ -15,6 +15,24 @@ pub struct BeaconOutput {
 	pub entities: BTreeMap<String, Vec<EndpointOutput>>,
 }
 
+impl BeaconOutput {
+	pub fn summary(&self) {
+		self.entities
+			.iter()
+			.for_each(|(entity_name, output)| {
+				if output.iter().all(|report| report.valid == Some(true)) {
+					log::info!("{} \u{2713}", entity_name);
+				}
+				else {
+					log::error!("{} \u{2717}", entity_name);
+					for error in output.iter().filter_map(|report| report.error.clone()) {
+						log::error!("\t{}", error);
+					}
+				}
+			});
+	}
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EndpointOutput {
 	pub name: String,

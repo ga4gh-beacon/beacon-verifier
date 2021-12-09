@@ -40,17 +40,21 @@ fn main() -> Result<(), VerifierError> {
 		.get_matches();
 
 	// Verbose
-
-	if matches.is_present("quiet") {
+	
+	if matches.is_present("quiet") || matches.is_present("summary") {
+		std::env::set_var("RUST_LOG", "info");
+		pretty_env_logger::init();
 		log::set_max_level(log::LevelFilter::Off);
 	}
-	if matches.is_present("verbose") {
+	else if matches.is_present("verbose") {
 		std::env::set_var("RUST_LOG", "debug");
+		pretty_env_logger::init();
 	}
 	else {
 		std::env::set_var("RUST_LOG", "info");
+		pretty_env_logger::init();
 	}
-	pretty_env_logger::init();
+	
 
 	// Load framework
 	let framework_location = url::Url::parse(
@@ -91,8 +95,18 @@ fn main() -> Result<(), VerifierError> {
 		},
 	};
 
-	let payload = serde_json::to_string_pretty(&output).unwrap();
-	println!("{}", payload);
+	if matches.is_present("summary") {
+		log::set_max_level(log::LevelFilter::Trace);
+		output.summary();
+	}
+	else {
+		if !matches.is_present("quiet") {
+			eprintln!();
+		}
+		output.summary();
+		let payload = serde_json::to_string_pretty(&output).unwrap();
+		println!("{}", payload);
+	}
 
 	Ok(())
 }
