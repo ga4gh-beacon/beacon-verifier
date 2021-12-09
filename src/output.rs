@@ -24,7 +24,7 @@ impl BeaconOutput {
 			else {
 				log::error!("{} \u{2717}", entity_name);
 				for error in output.iter().filter_map(|report| report.error.clone()) {
-					log::error!("\t{}", error);
+					log::error!("\t{}", error.trim());
 				}
 			}
 		});
