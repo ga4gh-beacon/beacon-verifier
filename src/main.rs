@@ -40,7 +40,7 @@ fn main() -> Result<(), VerifierError> {
 		.get_matches();
 
 	// Verbose
-	
+
 	if matches.is_present("quiet") || matches.is_present("summary") {
 		std::env::set_var("RUST_LOG", "info");
 		pretty_env_logger::init();
@@ -54,7 +54,6 @@ fn main() -> Result<(), VerifierError> {
 		std::env::set_var("RUST_LOG", "info");
 		pretty_env_logger::init();
 	}
-	
 
 	// Load framework
 	let framework_location = url::Url::parse(
