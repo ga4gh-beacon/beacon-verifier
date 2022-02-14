@@ -14,7 +14,7 @@ rust-version = "1.56"
 [dependencies]
 
 # Config
-clap = { version = "2.33", features = ["yaml"] }
+clap = { version = "3.0", features = ["derive"] }
 
 # Filesystem
 walkdir = "2.3.2"
@@ -22,7 +22,7 @@ tempfile = "3.2.0"
 git2 = "0.13"
 
 # Validation
-jsonschema = { version = "0.13", features = ["reqwest"] }
+jsonschema = { version = "0.15", features = ["reqwest"] }
 url = { version = "2.2", features = ["serde"] }
 reqwest = { version = "0.11", features = ["blocking", "json"] }
 

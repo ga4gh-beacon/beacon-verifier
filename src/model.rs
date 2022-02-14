@@ -63,6 +63,7 @@ impl Model {
 			Repository::clone(&repo_url, full_git_dir.path()).expect("Unable to clone repository");
 
 			// Copy subfolder to the final tempdir
+			log::debug!("Copying from {:?} to {:?}", full_git_dir.path().join(&path), dir.path());
 			utils::copy_dir_recursively(full_git_dir.path().join(path), dir.path()).unwrap();
 		}
 

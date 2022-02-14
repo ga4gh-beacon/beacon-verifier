@@ -37,9 +37,6 @@ pub enum VerifierError {
 	// TODO: Use errors
 	// #[error("No ids were extracted from the main entity endpoint")]
 	// NoIds,
-	#[error("{0} argument is not a URL")]
-	ArgNotURL(&'static str),
-
 	#[error("Error deserializing JSON: {0}")]
 	SerdeJsonError(#[from] serde_json::Error),
 }
