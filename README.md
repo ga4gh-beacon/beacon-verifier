@@ -19,7 +19,7 @@ You can specify one or multiple urls:
 beacon-verifier https://beacon-url.com/
 ```
 
-> By default, the [Beacon v2 model](https://github.com/ga4gh-beacon/beacon-v2-Models/tree/main/BEACON-V2-draft4-Model) is being used. But you can provide your own model with the `--model` option. The model should follow the [Beacon Framework](https://github.com/ga4gh-beacon/beacon-framework-v2).
+> By default, the [Beacon v2 model](https://github.com/ga4gh-beacon/beacon-v2-Models/tree/main/BEACON-V2-Model) is being used. But you can provide your own model with the `--model` option. The model should follow the [Beacon Framework](https://github.com/ga4gh-beacon/beacon-framework-v2).
 
 ```sh
 beacon-verifier --model https://beacon-model.com/ https://beacon-url.com/
@@ -28,7 +28,7 @@ beacon-verifier --model https://beacon-model.com/ https://beacon-url.com/
 Alternatively, you can specify a local path for the model:
 
 ```sh
-beacon-verifier --model file://$PWD/tests/BEACON-V2-draft4-Model https://beacon-url.com/
+beacon-verifier --model file://$PWD/tests/BEACON-V2-Model https://beacon-url.com/
 ```
 
 ## Output
