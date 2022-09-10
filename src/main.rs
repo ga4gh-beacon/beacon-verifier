@@ -60,6 +60,10 @@ struct Args {
 
 	/// Url to the Beacon implementation
 	url: Url,
+
+        /// Skip tls/ssl cert validation
+        #[clap(long = "ssl-no-verify")]
+        ssl_no_verify: bool,
 }
 
 fn main() {
