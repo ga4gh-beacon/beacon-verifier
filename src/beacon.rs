@@ -20,7 +20,11 @@ impl Beacon {
 	pub fn new(model: Option<Model>, framework: Framework, url: &Url) -> Result<Self, VerifierError> {
 		let mut info_url = url.clone();
 		info_url.set_path(Path::new(url.path()).join("info").to_str().unwrap_or(""));
-		let info: Json = reqwest::blocking::get(&info_url.to_string())?.json().unwrap();
+                // switch to builder to allow ignore self-signed ssl certs
+                let info_builder = reqwest::blocking::Client::builder()
+                    .danger_accept_invalid_certs(true) // make setting
+                    .build()?;               
+		let info: Json = info_builder.get(&info_url.to_string()).send()?.json().unwrap();
 		log::trace!("{}", info);
 
 		Ok(Self {

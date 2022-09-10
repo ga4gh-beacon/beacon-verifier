@@ -60,7 +60,9 @@ pub fn copy_dir_recursively<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> R
 
 pub fn ping_url(endpoint_url: &Url) -> Result<Json, VerifierError> {
 	// Query endpoint
-	let client = reqwest::blocking::Client::new();
+        let client = reqwest::blocking::Client::builder()
+            .danger_accept_invalid_certs(true) // make setting
+            .build()?;               
 
 	let response = match client.get(endpoint_url.clone()).send() {
 		Ok(response) if response.status().is_success() => response,
