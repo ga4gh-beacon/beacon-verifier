@@ -66,7 +66,7 @@ pub fn ping_url(endpoint_url: &Url) -> Result<Json, VerifierError> {
         // Build client
         let client = reqwest::blocking::Client::builder()
             .danger_accept_invalid_certs(matches.ssl_no_verify)
-            .build()?;               
+            .build()?;
 
 	// Query endpoint
 	let response = match client.get(endpoint_url.clone()).send() {

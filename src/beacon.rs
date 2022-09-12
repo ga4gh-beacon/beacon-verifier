@@ -27,7 +27,7 @@ impl Beacon {
                 let matches = crate::Args::parse();
                 let client = reqwest::blocking::Client::builder()
                     .danger_accept_invalid_certs(matches.ssl_no_verify)
-                    .build()?;               
+                    .build()?;
 		let info: Json = client.get(&info_url.to_string()).send()?.json().unwrap();
 		log::trace!("{}", info);
 
