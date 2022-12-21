@@ -8,7 +8,7 @@
 use std::collections::BTreeMap;
 
 use chrono::SubsecRound;
-use clap::StructOpt;
+use clap::Parser;
 use url::Url;
 
 use crate::beacon::Beacon;
@@ -61,9 +61,9 @@ struct Args {
 	/// Url to the Beacon implementation
 	url: Url,
 
-        /// Skip tls/ssl cert validation
-        #[clap(long = "ssl-no-verify")]
-        ssl_no_verify: bool,
+	/// Skip tls/ssl cert validation
+	#[clap(long = "ssl-no-verify")]
+	ssl_no_verify: bool,
 }
 
 fn main() {
@@ -76,12 +76,10 @@ fn main() {
 		std::env::set_var("RUST_LOG", "info");
 		pretty_env_logger::init();
 		log::set_max_level(log::LevelFilter::Off);
-	}
-	else if matches.verbose {
+	} else if matches.verbose {
 		std::env::set_var("RUST_LOG", "debug");
 		pretty_env_logger::init();
-	}
-	else {
+	} else {
 		std::env::set_var("RUST_LOG", "info");
 		pretty_env_logger::init();
 	}
@@ -95,8 +93,7 @@ fn main() {
 	// Load model
 	let model = if matches.only_framework {
 		None
-	}
-	else {
+	} else {
 		let model_location = matches.model;
 		log::debug!("Loading model from: {}", model_location);
 		let model = Model::load(&model_location).expect("Loading model failed");
@@ -121,8 +118,7 @@ fn main() {
 	if matches.summary {
 		log::set_max_level(log::LevelFilter::Trace);
 		output.summary();
-	}
-	else {
+	} else {
 		if !matches.quiet {
 			eprintln!();
 		}
