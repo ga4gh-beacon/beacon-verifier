@@ -10,6 +10,8 @@ use crate::interface::{BeaconResultSetResponse, EntityResult};
 // use crate::interface::FilteringTerm;
 use crate::{error, Json};
 
+use clap::Parser;
+
 pub fn copy_dir_recursively<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> Result<(), VerifierError> {
 	let mut stack = vec![PathBuf::from(from.as_ref())];
 
@@ -59,9 +61,14 @@ pub fn copy_dir_recursively<U: AsRef<Path>, V: AsRef<Path>>(from: U, to: V) -> R
 }
 
 pub fn ping_url(endpoint_url: &Url) -> Result<Json, VerifierError> {
-	// Query endpoint
-	let client = reqwest::blocking::Client::new();
 
+        let matches = crate::Args::parse();
+        // Build client
+        let client = reqwest::blocking::Client::builder()
+            .danger_accept_invalid_certs(matches.ssl_no_verify)
+            .build()?;
+
+	// Query endpoint
 	let response = match client.get(endpoint_url.clone()).send() {
 		Ok(response) if response.status().is_success() => response,
 		Ok(response) => {
